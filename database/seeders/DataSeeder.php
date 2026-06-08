@@ -16,14 +16,7 @@ class DataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Truncate để tránh duplicate khi re-seed
-        DB::statement('SET session_replication_role = replica'); // disable FK checks
-        DB::table('rescue_requests')->truncate();
-        DB::table('incidents')->truncate();
-        DB::table('ai_models')->truncate();
-        DB::table('rescue_teams')->truncate();
-        DB::table('shelters')->truncate();
-        DB::statement('SET session_replication_role = DEFAULT');
+        // Truncate đã được xử lý ở DatabaseSeeder
 
         $this->seedShelters();
         $this->seedRescueTeams();

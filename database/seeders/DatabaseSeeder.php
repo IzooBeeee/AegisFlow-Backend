@@ -13,19 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Xóa data cũ trước khi seed lại (tránh duplicate)
-        DB::statement('SET session_replication_role = replica');
-        DB::table('recommendations')->truncate();
-        DB::table('alerts')->truncate();
-        DB::table('predictions')->truncate();
-        DB::table('rescue_requests')->truncate();
-        DB::table('incidents')->truncate();
-        DB::table('sensors')->truncate();
-        DB::table('rescue_teams')->truncate();
-        DB::table('shelters')->truncate();
-        DB::table('flood_zones')->truncate();
-        DB::table('districts')->truncate();
-        DB::table('ai_models')->truncate();
-        DB::statement('SET session_replication_role = DEFAULT');
+        DB::statement('TRUNCATE TABLE recommendations, alerts, predictions, rescue_requests, incidents, sensors, rescue_teams, shelters, flood_zones, districts, ai_models RESTART IDENTITY CASCADE');
 
         $this->call([
             RolePermissionSeeder::class,
