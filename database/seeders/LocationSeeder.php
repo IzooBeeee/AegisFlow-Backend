@@ -13,6 +13,11 @@ class LocationSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! $this->hasPostGIS()) {
+            $this->command->warn('⚠️  PostGIS not available, skipping LocationSeeder geometry updates');
+            return;
+        }
+
         // ── Incidents ──────────────────────────────────────────────────────
         $incidents = [
             // Ngập đường Nguyễn Lương Bằng, Liên Chiểu
@@ -114,5 +119,15 @@ class LocationSeeder extends Seeder
                 ]);
         }
         $this->command->info('✅ Alerts locations updated (' . count($alerts) . ' alerts)');
+    }
+
+    private function hasPostGIS(): bool
+    {
+        try {
+            $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+            return count($result) > 0;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
