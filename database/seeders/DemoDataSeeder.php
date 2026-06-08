@@ -16,11 +16,15 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // Tắt broadcasting khi seed để tránh lỗi Reverb chưa chạy
+        Event::fake();
+
         $this->command->info('🚀 Seeding demo data for pitch video...');
 
         $now = Carbon::now();
