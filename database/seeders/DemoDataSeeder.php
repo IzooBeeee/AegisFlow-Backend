@@ -499,9 +499,11 @@ class DemoDataSeeder extends Seeder
         ];
 
         foreach ($alerts as $index => $alertData) {
+            $alertNumber = 'ALT-'.date('Ymd').'-'.str_pad($index + 1, 4, '0', STR_PAD_LEFT);
             Alert::updateOrCreate(
                 ['title' => $alertData['title']],
                 array_merge($alertData, [
+                    'alert_number' => $alertNumber,
                     'issued_by' => User::first()?->id,
                     'source' => 'demo',
                     'effective_from' => $now->copy()->subMinutes(20 - ($index * 5)),
