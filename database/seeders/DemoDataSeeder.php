@@ -193,7 +193,7 @@ class DemoDataSeeder extends Seeder
                 'is_active' => true,
             ]));
 
-            if (DB::connection()->getDriverName() === 'pgsql') {
+            if (DB::connection()->getDriverName() === 'pgsql' && $this->hasPostGIS()) {
                 $polygonPoints = collect(json_decode($coordinates, true));
                 $polygonPoints->push($polygonPoints->first());
 
@@ -574,5 +574,15 @@ class DemoDataSeeder extends Seeder
         }
 
         $this->command->info('   ✅ Recommendations: '.count($recommendations).' AI recommendations');
+    }
+
+    private function hasPostGIS(): bool
+    {
+        try {
+            $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+            return count($result) > 0;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

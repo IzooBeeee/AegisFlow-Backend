@@ -42,7 +42,7 @@ class GeographySeeder extends Seeder
                 $id = DB::table('districts')->insertGetId($district);
             }
 
-            if ($driver === 'pgsql') {
+            if ($driver === 'pgsql' && $this->hasPostGIS()) {
                 DB::statement(
                     'UPDATE districts SET boundary = ST_GeomFromText(?, 4326) WHERE id = ?',
                     [$boundaryWkt, $id]
@@ -51,5 +51,15 @@ class GeographySeeder extends Seeder
         }
 
         $this->command->info('✅ GeographySeeder: Đã tạo '.count($districts).' quận/huyện');
+    }
+
+    private function hasPostGIS(): bool
+    {
+        try {
+            $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+            return count($result) > 0;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

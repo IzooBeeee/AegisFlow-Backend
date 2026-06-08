@@ -76,7 +76,7 @@ class FloodZoneSeeder extends Seeder
                 $id = DB::table('flood_zones')->insertGetId($zone);
             }
 
-            if ($driver === 'pgsql') {
+            if ($driver === 'pgsql' && $this->hasPostGIS()) {
                 DB::statement(
                     'UPDATE flood_zones SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
                     [$geometry, $id]
@@ -85,5 +85,15 @@ class FloodZoneSeeder extends Seeder
         }
 
         $this->command->info('✅ FloodZoneSeeder: Đã tạo '.count($zones).' vùng ngập');
+    }
+
+    private function hasPostGIS(): bool
+    {
+        try {
+            $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+            return count($result) > 0;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
