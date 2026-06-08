@@ -77,7 +77,7 @@ class DemoDataSeeder extends Seeder
                 ])
             );
 
-            if (DB::connection()->getDriverName() === 'pgsql') {
+            if (DB::connection()->getDriverName() === 'pgsql' && $this->hasPostGIS()) {
                 DB::statement(
                     'UPDATE sensors SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                     [$lng, $lat, $sensor->id]
@@ -306,7 +306,7 @@ class DemoDataSeeder extends Seeder
                 ])
             );
 
-            if (DB::connection()->getDriverName() === 'pgsql') {
+            if (DB::connection()->getDriverName() === 'pgsql' && $this->hasPostGIS()) {
                 DB::statement(
                     'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                     [$lng, $lat, $incident->id]
@@ -455,7 +455,7 @@ class DemoDataSeeder extends Seeder
                 ])
             );
 
-            if (DB::connection()->getDriverName() === 'pgsql') {
+            if (DB::connection()->getDriverName() === 'pgsql' && $this->hasPostGIS()) {
                 DB::statement(
                     'UPDATE rescue_requests SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                     [$lng, $lat, $req->id]
