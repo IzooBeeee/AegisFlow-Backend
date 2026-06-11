@@ -11,6 +11,7 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
 use App\Models\Incident;
+use App\Support\DaNangLandMask;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -27,7 +28,10 @@ class IncidentController extends Controller
             ->limit(50)
             ->get();
 
-        $features = $incidents->map(fn ($i) => $i->toGeoJson());
+        $features = $incidents
+            ->map(fn ($i) => $i->toGeoJson())
+            ->filter(fn (array $feature) => DaNangLandMask::featureIsLikelyLand($feature))
+            ->values();
 
         return response()->json([
             'type' => 'FeatureCollection',
@@ -93,7 +97,16 @@ class IncidentController extends Controller
 
         $incidents = $query->paginate($request->get('per_page', 20));
 
-        $data = $incidents->map(fn ($i) => $this->formatIncident($i));
+        $data = $incidents
+            ->map(fn ($i) => $this->formatIncident($i))
+            ->filter(function (array $incident) {
+                $location = $incident['location'] ?? null;
+
+                return is_array($location)
+                    && isset($location['lat'], $location['lng'])
+                    && DaNangLandMask::isLikelyLand((float) $location['lat'], (float) $location['lng']);
+            })
+            ->values();
 
         return ApiResponse::paginate($incidents->setCollection($data));
     }

@@ -116,7 +116,7 @@ class MapController extends Controller
             }
         }
 
-        $incidents = $query->limit(200)->get();
+        $incidents = $query->with(['ward', 'district'])->limit(200)->get();
 
         $features = $incidents
             ->map(fn ($i) => $i->toGeoJson())

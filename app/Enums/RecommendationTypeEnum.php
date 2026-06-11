@@ -10,6 +10,7 @@ enum RecommendationTypeEnum: string
     case SIGNAL_CONTROL = 'signal_control';
     case EVACUATION = 'evacuation';
     case SUPPLY_DISPATCH = 'supply_dispatch';
+    case RESCUE_DISPATCH = 'rescue_dispatch';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum RecommendationTypeEnum: string
             self::SIGNAL_CONTROL => 'Điều khiển tín hiệu',
             self::EVACUATION => 'Sơ tán',
             self::SUPPLY_DISPATCH => 'Điều vật tư',
+            self::RESCUE_DISPATCH => 'Điều cứu hộ',
         };
     }
 

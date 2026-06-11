@@ -53,6 +53,16 @@ class DaNangLandMask
             [108.174, 16.107],
             [108.155, 16.091],
         ],
+        // Lower bay water just north of Nguyen Tat Thanh coastline.
+        [
+            [108.168, 16.078],
+            [108.190, 16.076],
+            [108.210, 16.080],
+            [108.224, 16.094],
+            [108.216, 16.098],
+            [108.190, 16.086],
+            [108.165, 16.082],
+        ],
     ];
 
     public static function isLikelyLand(float $lat, float $lng): bool

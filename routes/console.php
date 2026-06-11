@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\CallAIPrediction;
+use App\Models\SystemSetting;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -14,11 +16,26 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 */
 
-// Chạy dự báo AI mỗi 15 phút
-Schedule::job(new \App\Jobs\CallAIPrediction)
-    ->everyFifteenMinutes()
-    ->withoutOverlapping()
-    ->name('ai-prediction');
+// Kiểm tra mỗi phút, nhưng chỉ chạy dự báo AI theo interval được cấu hình trong system_settings
+Schedule::call(function () {
+    if (! SystemSetting::getValue('ai.prediction.enabled', true)) {
+        return;
+    }
+
+    $interval = max(1, (int) SystemSetting::getValue('ai.prediction.interval_minutes', 15));
+    $horizon = (int) SystemSetting::getValue('ai.prediction.horizon_minutes', 60);
+    $lastRunAt = SystemSetting::getValue('ai.prediction.last_run_at');
+
+    if ($lastRunAt && now()->diffInMinutes(\Illuminate\Support\Carbon::parse($lastRunAt)) < $interval) {
+        return;
+    }
+
+    SystemSetting::setValue('ai.prediction.last_run_at', now()->toIso8601String(), 'string', 'ai', 'Lần chạy dự báo AI gần nhất');
+    CallAIPrediction::dispatch(null, null, $horizon);
+})
+    ->everyMinute()
+    ->name('ai-prediction')
+    ->withoutOverlapping();
 
 // Fetch dữ liệu thời tiết từ OpenWeatherMap mỗi 30 phút
 Schedule::job(new \App\Jobs\FetchWeatherDataJob)

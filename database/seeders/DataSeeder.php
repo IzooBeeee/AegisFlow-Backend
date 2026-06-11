@@ -14,6 +14,19 @@ use Illuminate\Support\Facades\DB;
 
 class DataSeeder extends Seeder
 {
+    private const SAFE_INCIDENT_COORDINATES = [
+        ['lat' => 16.0712, 'lng' => 108.1498], // Liên Chiểu
+        ['lat' => 16.0645, 'lng' => 108.2115], // Thanh Khê / Hải Châu
+        ['lat' => 16.0612, 'lng' => 108.2122], // Nguyễn Văn Linh - Hàm Nghi
+        ['lat' => 16.0134, 'lng' => 108.1921], // Cẩm Lệ
+        ['lat' => 16.0039, 'lng' => 108.2062], // Ngũ Hành Sơn
+        ['lat' => 15.9823, 'lng' => 108.0912], // Hòa Vang
+        ['lat' => 16.0589, 'lng' => 108.1934], // Thanh Khê
+        ['lat' => 16.0678, 'lng' => 108.2208], // Hải Châu
+        ['lat' => 16.0102, 'lng' => 108.1893], // Cẩm Lệ
+        ['lat' => 16.0412, 'lng' => 108.1756], // Cẩm Lệ Nam
+    ];
+
     public function run(): void
     {
         // Truncate đã được xử lý ở DatabaseSeeder
@@ -184,7 +197,8 @@ class DataSeeder extends Seeder
         for ($i = 0; $i < 50; $i++) {
             $severity = $faker->randomElement(['low', 'medium', 'high', 'critical']);
             $wl = $faker->randomFloat(1, 0.2, 2.5);
-            Incident::create([
+            $coordinate = self::SAFE_INCIDENT_COORDINATES[$i % count(self::SAFE_INCIDENT_COORDINATES)];
+            $incident = Incident::create([
                 'title' => 'Ngập đường ' . $faker->streetName(),
                 'type' => 'flood',
                 'severity' => $severity,
@@ -196,6 +210,14 @@ class DataSeeder extends Seeder
                 'reported_by' => $faker->numberBetween(1, 5),
                 'created_at' => now()->subHours(rand(1, 72))
             ]);
+
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                DB::statement(
+                    'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                    [$coordinate['lng'], $coordinate['lat'], $incident->id]
+                );
+            }
+
             $addedIncidents++;
         }
 

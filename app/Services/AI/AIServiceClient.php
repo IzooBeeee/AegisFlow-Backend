@@ -20,7 +20,15 @@ class AIServiceClient
     /**
      * Gửi yêu cầu dự báo rủi ro ngập lụt
      */
-    public function predictFloodRisk(float $waterLevel, float $rainfall, int $hours, float $tide = 0.0, float $history = 0.0): ?array
+    public function predictFloodRisk(
+        float $waterLevel,
+        float $rainfall,
+        int $hours,
+        float $tide = 0.0,
+        float $history = 0.0,
+        ?string $predictionTime = null,
+        bool $seasonalityEnabled = true
+    ): ?array
     {
         try {
             $response = Http::timeout($this->timeout)
@@ -30,6 +38,8 @@ class AIServiceClient
                     'hours_rain' => $hours,
                     'tide_level' => $tide,
                     'historical_score' => $history,
+                    'prediction_time' => $predictionTime ?? now()->toIso8601String(),
+                    'seasonality_enabled' => $seasonalityEnabled,
                 ]);
 
             if ($response->successful()) {

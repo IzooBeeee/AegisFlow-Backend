@@ -9,6 +9,7 @@ use App\Models\Incident;
 use App\Models\Prediction;
 use App\Models\PredictionDetail;
 use App\Models\Sensor;
+use App\Models\SystemSetting;
 use App\Models\WeatherData;
 use App\Services\RecommendationGenerator;
 use Illuminate\Bus\Queueable;
@@ -158,6 +159,7 @@ class CallAIPrediction implements ShouldQueue
                 ->post($url, [
                     'input_data' => $inputData,
                     'horizon_minutes' => $this->horizonMinutes,
+                    'seasonality_enabled' => SystemSetting::getValue('ai.prediction.seasonality_enabled', true),
                 ]);
 
             if ($response->successful()) {
@@ -226,22 +228,33 @@ class CallAIPrediction implements ShouldQueue
 
         $primaryResult = $aiResponse['results'][0] ?? [];
 
+        // Lưu cả input và output của AI để RecommendationGenerator dùng
+        $storedInputData = [
+            'zones'                => $inputData,
+            'contributing_factors' => $primaryResult['contributing_factors'] ?? [],
+            'timeseries_features'  => $primaryResult['timeseries_features']  ?? [],
+            'risk_factors'         => $primaryResult['risk_factors']          ?? [],
+            'risk_level'           => $primaryResult['risk_level']            ?? null,
+            'model_version'        => $primaryResult['model_version']         ?? null,
+            'prediction_method'    => $primaryResult['prediction_method']     ?? null,
+        ];
+
         return Prediction::create([
-            'model_id' => $model?->id,
-            'model_version' => $primaryResult['model_version'] ?? $model?->version,
+            'model_id'        => $model?->id,
+            'model_version'   => $primaryResult['model_version'] ?? $model?->version,
             'prediction_type' => $primaryResult['type'] ?? 'flood_probability',
-            'flood_zone_id' => $this->floodZoneId ?? ($primaryResult['zone_id'] ?? $inputData[0]['zone_id'] ?? null),
-            'district_id' => FloodZone::find($primaryResult['zone_id'] ?? $inputData[0]['zone_id'] ?? null)?->district_id,
-            'incident_id' => $this->incidentId,
-            'prediction_for' => now()->addMinutes($this->horizonMinutes),
+            'flood_zone_id'   => $this->floodZoneId ?? ($primaryResult['zone_id'] ?? $inputData[0]['zone_id'] ?? null),
+            'district_id'     => FloodZone::find($primaryResult['zone_id'] ?? $inputData[0]['zone_id'] ?? null)?->district_id,
+            'incident_id'     => $this->incidentId,
+            'prediction_for'  => now()->addMinutes($this->horizonMinutes),
             'horizon_minutes' => $this->horizonMinutes,
             'predicted_value' => $primaryResult['predicted_value'] ?? null,
-            'confidence' => $primaryResult['confidence'] ?? null,
-            'probability' => $this->normalizeProbability($primaryResult),
-            'severity' => $this->normalizeSeverity($primaryResult),
-            'input_data' => $inputData,
+            'confidence'      => $primaryResult['confidence'] ?? null,
+            'probability'     => $this->normalizeProbability($primaryResult),
+            'severity'        => $this->normalizeSeverity($primaryResult),
+            'input_data'      => $storedInputData,
             'processing_time_ms' => $processingTimeMs,
-            'status' => 'generated',
+            'status'          => 'generated',
         ]);
     }
 
