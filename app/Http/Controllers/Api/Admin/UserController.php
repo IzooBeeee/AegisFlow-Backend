@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -190,5 +191,69 @@ class UserController extends Controller
             ->where('id', $value)
             ->orWhere('name', $value)
             ->first();
+    }
+
+    /**
+     * Get user specific permissions
+     * GET /api/admin/users/{id}/permissions
+     */
+    public function permissions(int $id)
+    {
+        $user = User::find($id);
+        if (! $user) {
+            return ApiResponse::notFound('Không tìm thấy người dùng');
+        }
+
+        // Get all available permissions grouped by prefix
+        $allPermissions = Permission::orderBy('name')->get();
+        $groupedPermissions = $allPermissions->groupBy(function ($permission) {
+            $parts = explode('.', $permission->name);
+            return $parts[0];
+        })->map(function ($permissions, $group) {
+            return [
+                'group' => $group,
+                'permissions' => $permissions->map(function ($p) {
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                    ];
+                })->values(),
+            ];
+        })->values();
+
+        return ApiResponse::success([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'direct_permissions' => $user->getDirectPermissions()->pluck('name'),
+            'role_permissions' => $user->getPermissionsViaRoles()->pluck('name'),
+            'all_permissions' => $groupedPermissions,
+        ]);
+    }
+
+    /**
+     * Sync user specific permissions
+     * PUT /api/admin/users/{id}/permissions
+     */
+    public function syncPermissions(Request $request, int $id)
+    {
+        $user = User::find($id);
+        if (! $user) {
+            return ApiResponse::notFound('Không tìm thấy người dùng');
+        }
+
+        $data = $request->validate([
+            'permissions' => 'array',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        $user->syncPermissions($data['permissions'] ?? []);
+
+        return ApiResponse::success(
+            $user->getDirectPermissions()->pluck('name'),
+            'Cập nhật quyền riêng thành công'
+        );
     }
 }

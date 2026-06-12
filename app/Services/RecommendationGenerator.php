@@ -306,7 +306,12 @@ class RecommendationGenerator
                 'reasoning'  => $this->buildReasoning($ctx, 'alert'),
             ]
         );
-        $this->publishAlert($prediction, $alertRec);
+        if ($this->publishAlert($prediction, $alertRec)) {
+            $alertRec->update([
+                'status' => 'executed',
+                'executed_at' => now(),
+            ]);
+        }
         $recs[] = $alertRec;
 
         // 3. Điều đội cứu hộ nếu có
@@ -364,7 +369,6 @@ class RecommendationGenerator
                 'reasoning'  => $this->buildReasoning($ctx, 'alert'),
             ]
         );
-        $this->publishAlert($prediction, $alertRec);
         $recs[] = $alertRec;
 
         return $recs;

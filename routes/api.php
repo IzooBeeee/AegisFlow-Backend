@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\SystemController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AIChatController;
@@ -212,7 +213,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================================
     Route::middleware('role:city_admin')->prefix('admin')->group(function () {
 
+        // Roles & Permissions
+        Route::get('roles', [RoleController::class, 'index']);
+        Route::get('permissions', [RoleController::class, 'permissions']);
+        Route::put('roles/{id}/permissions', [RoleController::class, 'syncPermissions']);
+
         // User management
+        Route::get('users/{id}/permissions', [UserController::class, 'permissions']);
+        Route::put('users/{id}/permissions', [UserController::class, 'syncPermissions']);
         Route::apiResource('users', UserController::class);
         Route::get('stats', [SystemController::class, 'stats']);
         Route::get('logs', [SystemController::class, 'logs']);
