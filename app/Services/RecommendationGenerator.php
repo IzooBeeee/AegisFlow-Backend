@@ -550,10 +550,12 @@ class RecommendationGenerator
         $centroid = $floodZone?->centroid_array;
         if ($centroid && DB::connection()->getDriverName() === 'pgsql') {
             try {
-                DB::statement(
-                    'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                    [(float) $centroid['lng'], (float) $centroid['lat'], $alert->id]
-                );
+                try {
+            DB::statement(
+                                'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                                [(float) $centroid['lng'], (float) $centroid['lat'], $alert->id]
+                            );
+        } catch (\Exception $e) {}
             } catch (\Exception) {
                 // PostGIS không có — bỏ qua
             }

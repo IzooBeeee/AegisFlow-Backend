@@ -155,12 +155,16 @@ class Incident extends Model
     public function getLocationAttribute(): ?array
     {
         try {
+            try {
             $result = DB::selectOne("
-                SELECT ST_X(geometry) as lng, ST_Y(geometry) as lat
-                FROM incidents WHERE id = ?
-            ", [$this->id]);
-
-            return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+                            SELECT ST_X(geometry) as lng, ST_Y(geometry) as lat
+                            FROM incidents WHERE id = ?
+                        ", [$this->id]);
+            
+                        return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+        } catch (\Exception $e) {
+            return null;
+        }
         } catch (\Exception $e) {
             return null;
         }

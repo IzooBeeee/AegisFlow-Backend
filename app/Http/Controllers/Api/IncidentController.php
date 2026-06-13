@@ -172,10 +172,12 @@ class IncidentController extends Controller
 
         // Lưu PostGIS geometry
         if (DB::connection()->getDriverName() === 'pgsql') {
+            try {
             DB::statement(
-                'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                [$data['longitude'], $data['latitude'], $incident->id]
-            );
+                            'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                            [$data['longitude'], $data['latitude'], $incident->id]
+                        );
+        } catch (\Exception $e) {}
         }
 
         // Map incident type to alert type
@@ -204,10 +206,12 @@ class IncidentController extends Controller
             ]);
 
             if (isset($data['latitude']) && isset($data['longitude']) && DB::connection()->getDriverName() === 'pgsql') {
-                DB::statement(
-                    'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                    [$data['longitude'], $data['latitude'], $alert->id]
-                );
+                try {
+            DB::statement(
+                                'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                                [$data['longitude'], $data['latitude'], $alert->id]
+                            );
+        } catch (\Exception $e) {}
             }
         }
 
@@ -253,10 +257,12 @@ class IncidentController extends Controller
 
         // Cập nhật geometry
         if (isset($data['latitude'], $data['longitude']) && DB::connection()->getDriverName() === 'pgsql') {
+            try {
             DB::statement(
-                'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                [$data['longitude'], $data['latitude'], $incident->id]
-            );
+                            'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                            [$data['longitude'], $data['latitude'], $incident->id]
+                        );
+        } catch (\Exception $e) {}
         }
 
         // Log events nếu có thay đổi

@@ -153,12 +153,16 @@ class Sensor extends Model
      */
     public function getLocationAttribute(): ?array
     {
-        $result = DB::selectOne("
-            SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
-            FROM sensors WHERE id = ?
-        ", [$this->id]);
-
-        return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+        try {
+            $result = DB::selectOne("
+                        SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
+                        FROM sensors WHERE id = ?
+                    ", [$this->id]);
+            
+                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**

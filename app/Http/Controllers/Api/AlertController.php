@@ -124,10 +124,12 @@ class AlertController extends Controller
 
         // Lưu geometry PostGIS
         if (! empty($data['geometry']) && DB::connection()->getDriverName() === 'pgsql') {
+            try {
             DB::statement(
-                'UPDATE alerts SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
-                [$data['geometry'], $alert->id]
-            );
+                            'UPDATE alerts SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
+                            [$data['geometry'], $alert->id]
+                        );
+        } catch (\Exception $e) {}
         }
 
         // Broadcast event

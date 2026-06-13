@@ -94,10 +94,12 @@ class FetchWeatherDataJob implements ShouldQueue
             );
 
             if (DB::connection()->getDriverName() === 'pgsql') {
-                DB::statement(
-                    'UPDATE sensors SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                    [$info['lon'], $info['lat'], $sensor->id]
-                );
+                try {
+            DB::statement(
+                                'UPDATE sensors SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                                [$info['lon'], $info['lat'], $sensor->id]
+                            );
+        } catch (\Exception $e) {}
             }
         }
     }

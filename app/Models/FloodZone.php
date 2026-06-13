@@ -161,12 +161,16 @@ class FloodZone extends Model
             return null;
         }
 
-        $result = DB::selectOne("
-            SELECT ST_X(centroid::geometry) as lng, ST_Y(centroid::geometry) as lat
-            FROM flood_zones WHERE id = ?
-        ", [$this->id]);
-
-        return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+        try {
+            $result = DB::selectOne("
+                        SELECT ST_X(centroid::geometry) as lng, ST_Y(centroid::geometry) as lat
+                        FROM flood_zones WHERE id = ?
+                    ", [$this->id]);
+            
+                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**

@@ -207,11 +207,15 @@ class EvacuationRoute extends Model
             return null;
         }
 
-        $result = DB::selectOne("
-            SELECT ST_AsGeoJSON(geometry) as geojson FROM evacuation_routes WHERE id = ?
-        ", [$this->id]);
-
-        return $result ? json_decode($result->geojson) : null;
+        try {
+            $result = DB::selectOne("
+                        SELECT ST_AsGeoJSON(geometry) as geojson FROM evacuation_routes WHERE id = ?
+                    ", [$this->id]);
+            
+                    return $result ? json_decode($result->geojson) : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     // ============================================================

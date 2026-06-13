@@ -150,10 +150,12 @@ class RescueRequestController extends Controller
 
         // Lưu PostGIS geometry
         if (DB::connection()->getDriverName() === 'pgsql') {
+            try {
             DB::statement(
-                'UPDATE rescue_requests SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                [$data['longitude'], $data['latitude'], $req->id]
-            );
+                            'UPDATE rescue_requests SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                            [$data['longitude'], $data['latitude'], $req->id]
+                        );
+        } catch (\Exception $e) {}
         }
 
         // Tính priority score
