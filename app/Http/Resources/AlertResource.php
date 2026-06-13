@@ -56,18 +56,22 @@ class AlertResource extends JsonResource
         // Extract coordinates from PostGIS geometry
         $geometry = null;
         if (DB::connection()->getDriverName() === 'pgsql') {
-            $result = DB::selectOne(
-                'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
-                [$this->id]
-            );
-            if ($result?->geojson) {
-                $geometry = json_decode($result->geojson, true);
-                if (! DaNangLandMask::featureIsLikelyLand([
-                    'type' => 'Feature',
-                    'geometry' => $geometry,
-                ])) {
-                    $geometry = null;
+            try {
+                $result = DB::selectOne(
+                    'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
+                    [$this->id]
+                );
+                if ($result?->geojson) {
+                    $geometry = json_decode($result->geojson, true);
+                    if (! DaNangLandMask::featureIsLikelyLand([
+                        'type' => 'Feature',
+                        'geometry' => $geometry,
+                    ])) {
+                        $geometry = null;
+                    }
                 }
+            } catch (\Exception $e) {
+                // Ignore if PostGIS is not available
             }
         }
 
