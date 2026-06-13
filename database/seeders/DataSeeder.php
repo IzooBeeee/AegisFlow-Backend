@@ -212,9 +212,10 @@ class DataSeeder extends Seeder
             ]);
 
             if (DB::connection()->getDriverName() === 'pgsql') {
+                $point = 'SRID=4326;POINT(' . $coordinate['lng'] . ' ' . $coordinate['lat'] . ')';
                 DB::statement(
-                    'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?::float, ?::float), 4326) WHERE id = ?',
-                    [$coordinate['lng'], $coordinate['lat'], $incident->id]
+                    'UPDATE incidents SET geometry = ?::geometry WHERE id = ?',
+                    [$point, $incident->id]
                 );
             }
 
