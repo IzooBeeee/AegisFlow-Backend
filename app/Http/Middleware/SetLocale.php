@@ -13,7 +13,7 @@ class SetLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->getPreferredLanguage(['vi', 'en']);
+        $locale = $request->getPreferredLanguage(['vi', 'en', 'id', 'ms', 'th', 'tl']);
 
         app()->setLocale($locale);
 
