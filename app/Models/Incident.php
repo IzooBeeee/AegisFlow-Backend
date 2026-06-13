@@ -156,10 +156,14 @@ class Incident extends Model
     {
         try {
             try {
-            $result = DB::selectOne("
+            try {
+            $result = \Illuminate\Support\Facades\DB::selectOne("
                             SELECT ST_X(geometry) as lng, ST_Y(geometry) as lat
                             FROM incidents WHERE id = ?
                         ", [$this->id]);
+        } catch (\Exception $e) {
+            $result = null;
+        }
             
                         return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
@@ -177,9 +181,13 @@ class Incident extends Model
     {
         $geometry = null;
         try {
-            $geometry = DB::selectOne("
+            try {
+            $geometry = \Illuminate\Support\Facades\DB::selectOne("
                 SELECT ST_AsGeoJSON(geometry) as geojson FROM incidents WHERE id = ?
             ", [$this->id]);
+        } catch (\Exception $e) {
+            $geometry = null;
+        }
         } catch (\Exception $e) {
             // Ignore
         }

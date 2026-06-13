@@ -188,10 +188,14 @@ class AlertController extends Controller
         $features = $alerts->map(function ($alert) {
             $geometry = null;
             if (DB::connection()->getDriverName() === 'pgsql') {
-                $result = DB::selectOne(
+                try {
+            $result = \Illuminate\Support\Facades\DB::selectOne(
                     'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
                     [$alert->id]
                 );
+        } catch (\Exception $e) {
+            $result = null;
+        }
                 $geometry = $result?->geojson ? json_decode($result->geojson) : null;
             }
 

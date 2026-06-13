@@ -134,9 +134,13 @@ class MapEdge extends Model
      */
     public function toGeoJson(): array
     {
-        $geometry = DB::selectOne("
+        try {
+            $geometry = \Illuminate\Support\Facades\DB::selectOne("
             SELECT ST_AsGeoJSON(geometry) as geojson FROM map_edges WHERE id = ?
         ", [$this->id]);
+        } catch (\Exception $e) {
+            $geometry = null;
+        }
 
         return [
             'type' => 'Feature',

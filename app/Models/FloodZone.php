@@ -162,10 +162,14 @@ class FloodZone extends Model
         }
 
         try {
-            $result = DB::selectOne("
+            try {
+            $result = \Illuminate\Support\Facades\DB::selectOne("
                         SELECT ST_X(centroid::geometry) as lng, ST_Y(centroid::geometry) as lat
                         FROM flood_zones WHERE id = ?
                     ", [$this->id]);
+        } catch (\Exception $e) {
+            $result = null;
+        }
             
                     return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
@@ -178,9 +182,13 @@ class FloodZone extends Model
      */
     public function toGeoJson(): array
     {
-        $geometry = DB::selectOne("
+        try {
+            $geometry = \Illuminate\Support\Facades\DB::selectOne("
             SELECT ST_AsGeoJSON(geometry) as geojson FROM flood_zones WHERE id = ?
         ", [$this->id]);
+        } catch (\Exception $e) {
+            $geometry = null;
+        }
 
         return [
             'type' => 'Feature',
