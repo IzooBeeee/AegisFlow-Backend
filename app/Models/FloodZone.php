@@ -190,6 +190,27 @@ class FloodZone extends Model
             $geometry = null;
         }
 
+        // Fallback for environments without PostGIS
+        $geomData = null;
+        if ($geometry && $geometry->geojson) {
+            $geomData = json_decode($geometry->geojson);
+        } else {
+            $fallbacks = [
+                'lien-chieu' => [[[108.1, 16.08], [108.14, 16.08], [108.14, 16.05], [108.1, 16.05], [108.1, 16.08]]],
+                'cam-le' => [[[108.15, 16.01], [108.19, 16.01], [108.19, 15.98], [108.15, 15.98], [108.15, 16.01]]],
+                'hoa-vang' => [[[108.08, 15.98], [108.13, 15.98], [108.13, 15.94], [108.08, 15.94], [108.08, 15.98]]],
+                'demo-an-khe' => [[[108.175, 16.058], [108.18, 16.062], [108.178, 16.065], [108.172, 16.061], [108.175, 16.058]]],
+                'demo-hoa-khanh' => [[[108.1, 16.04], [108.108, 16.048], [108.105, 16.052], [108.098, 16.044], [108.1, 16.04]]],
+                'demo-tuy-loan' => [[[108.138, 15.99], [108.145, 15.997], [108.142, 16.001], [108.136, 15.994], [108.138, 15.99]]],
+            ];
+            if (isset($fallbacks[$this->slug])) {
+                $geomData = [
+                    'type' => 'Polygon',
+                    'coordinates' => $fallbacks[$this->slug]
+                ];
+            }
+        }
+
         return [
             'type' => 'Feature',
             'id' => $this->id,
@@ -205,7 +226,7 @@ class FloodZone extends Model
                 'color' => $this->color,
                 'opacity' => (float) $this->opacity,
             ],
-            'geometry' => $geometry ? json_decode($geometry->geojson) : null,
+            'geometry' => $geomData,
         ];
     }
 

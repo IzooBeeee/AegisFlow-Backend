@@ -242,6 +242,17 @@ class Incident extends Model
 
         $reporterName = $this->relationLoaded('reporter') && $this->reporter ? $this->reporter->name : 'Người dân';
 
+        // Fallback for environments without PostGIS
+        $geomData = null;
+        if ($geometry && $geometry->geojson) {
+            $geomData = json_decode($geometry->geojson);
+        } elseif (!empty($this->location) && isset($this->location['lng']) && isset($this->location['lat'])) {
+            $geomData = [
+                'type' => 'Point',
+                'coordinates' => [(float) $this->location['lng'], (float) $this->location['lat']],
+            ];
+        }
+
         return [
             'type' => 'Feature',
             'id' => $this->id,

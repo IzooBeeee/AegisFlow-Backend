@@ -65,7 +65,10 @@ class AlertResource extends JsonResource
                     $geometry = json_decode($result->geojson, true);
                     if (! DaNangLandMask::featureIsLikelyLand([
                         'type' => 'Feature',
-                        'geometry' => $geometry,
+                        'geometry' => $geometry ?? (!empty($this->relatedIncident?->location) && isset($this->relatedIncident->location['lng']) && isset($this->relatedIncident->location['lat']) ? [
+                'type' => 'Point',
+                'coordinates' => [(float) $this->relatedIncident->location['lng'], (float) $this->relatedIncident->location['lat']]
+            ] : null),
                     ])) {
                         $geometry = null;
                     }
@@ -94,7 +97,10 @@ class AlertResource extends JsonResource
             'radius_km' => $this->radius_km,
             'effective_from' => $this->effective_from?->toIso8601String(),
             'effective_until' => $this->effective_until?->toIso8601String(),
-            'geometry' => $geometry,
+            'geometry' => $geometry ?? (!empty($this->relatedIncident?->location) && isset($this->relatedIncident->location['lng']) && isset($this->relatedIncident->location['lat']) ? [
+                'type' => 'Point',
+                'coordinates' => [(float) $this->relatedIncident->location['lng'], (float) $this->relatedIncident->location['lat']]
+            ] : null),
             'photo_urls' => $this->relatedIncident?->photo_urls ?? [],
             'address' => $this->relatedIncident?->address,
             'related_incident' => $this->relatedIncident ? [
