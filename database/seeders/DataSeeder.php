@@ -212,11 +212,15 @@ class DataSeeder extends Seeder
             ]);
 
             if (DB::connection()->getDriverName() === 'pgsql') {
-                $point = 'SRID=4326;POINT(' . $coordinate['lng'] . ' ' . $coordinate['lat'] . ')';
-                DB::statement(
-                    'UPDATE incidents SET geometry = ?::public.geometry WHERE id = ?',
-                    [$point, $incident->id]
-                );
+                try {
+                    $point = 'SRID=4326;POINT(' . $coordinate['lng'] . ' ' . $coordinate['lat'] . ')';
+                    DB::statement(
+                        'UPDATE incidents SET geometry = ?::geometry WHERE id = ?',
+                        [$point, $incident->id]
+                    );
+                } catch (\Exception $e) {
+                    // Ignore if PostGIS is not available
+                }
             }
 
             $addedIncidents++;
