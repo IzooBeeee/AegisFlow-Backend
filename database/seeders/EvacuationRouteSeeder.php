@@ -60,7 +60,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#10B981',
                 'flood_zone_id' => $floodZoneIds[0] ?? null,
                 'shelter_id' => $shelterIds[0] ?? null,
-                'polyline' => '16.0989,108.1506;16.1043,108.1580;16.1100,108.1655;16.1143,108.1722',
             ],
             [
                 'name' => 'Tuyến sơ tán Liên Chiểu → Thể thao Liên Chiểu',
@@ -76,7 +75,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#3B82F6',
                 'flood_zone_id' => $floodZoneIds[4] ?? null,
                 'shelter_id' => $shelterIds[1] ?? null,
-                'polyline' => '16.0761,108.1444;16.0850,108.1530;16.0940,108.1610;16.1024,108.1680',
             ],
             [
                 'name' => 'Tuyến sơ tán An Khê → ĐH Sư Phạm',
@@ -92,7 +90,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#10B981',
                 'flood_zone_id' => $floodZoneIds[3] ?? null,
                 'shelter_id' => $shelterIds[2] ?? null,
-                'polyline' => '16.0618,108.1982;16.0650,108.2060;16.0690,108.2130;16.0740,108.2210',
             ],
             [
                 'name' => 'Tuyến sơ tán Cẩm Lệ → Nguyễn Hiền',
@@ -108,7 +105,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#10B981',
                 'flood_zone_id' => $floodZoneIds[1] ?? null,
                 'shelter_id' => $shelterIds[3] ?? null,
-                'polyline' => '16.0231,108.2003;16.0255,108.2060;16.0278,108.2105;16.0301,108.2150',
             ],
             [
                 'name' => 'Tuyến sơ tán Hoàng Văn Thụ → UBND Thanh Khê',
@@ -124,7 +120,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#F59E0B',
                 'flood_zone_id' => null,
                 'shelter_id' => $shelterIds[4] ?? null,
-                'polyline' => '16.0544,108.2022;16.0580,108.1990;16.0630,108.1950;16.0693,108.1902',
             ],
             [
                 'name' => 'Tuyến sơ tán Túy Loan → Nguyễn Bỉnh Khiêm',
@@ -140,7 +135,6 @@ class EvacuationRouteSeeder extends Seeder
                 'color' => '#10B981',
                 'flood_zone_id' => $floodZoneIds[5] ?? null,
                 'shelter_id' => $shelterIds[5] ?? null,
-                'polyline' => '15.9962,108.1531;15.9990,108.1580;16.0010,108.1630;16.0042,108.1711',
             ],
         ];
 
