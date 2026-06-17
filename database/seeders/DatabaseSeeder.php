@@ -24,6 +24,8 @@ class DatabaseSeeder extends Seeder
             RealDataSeeder::class,
             DemoDataSeeder::class,
             LocationSeeder::class,
+            CitizenAndRescueTeamSeeder::class,
+            EvacuationRouteSeeder::class,
         ]);
     }
 }
