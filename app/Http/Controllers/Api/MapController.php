@@ -120,7 +120,14 @@ class MapController extends Controller
 
         $features = $incidents
             ->map(fn ($i) => $i->toGeoJson())
-            ->filter(fn (array $feature) => DaNangLandMask::featureIsLikelyLand($feature))
+            ->filter(function (array $feature) {
+                $coords = $feature['geometry']['coordinates'] ?? null;
+                if (! $coords || ! isset($coords[0], $coords[1])) return false;
+                // Only filter if coordinates exist but are clearly outside Da Nang region
+                $lng = (float) $coords[0];
+                $lat = (float) $coords[1];
+                return $lat > 15.8 && $lat < 16.3 && $lng > 107.8 && $lng < 108.5;
+            })
             ->values();
 
         return response()->json([
