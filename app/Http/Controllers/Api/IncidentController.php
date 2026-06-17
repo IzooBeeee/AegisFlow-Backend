@@ -100,13 +100,6 @@ class IncidentController extends Controller
 
         $data = $incidents
             ->map(fn ($i) => $this->formatIncident($i))
-            ->filter(function (array $incident) {
-                $location = $incident['location'] ?? null;
-
-                return is_array($location)
-                    && isset($location['lat'], $location['lng'])
-                    && DaNangLandMask::isLikelyLand((float) $location['lat'], (float) $location['lng']);
-            })
             ->values();
 
         return ApiResponse::paginate($incidents->setCollection($data));
