@@ -65,6 +65,8 @@ class Incident extends Model
         'resolved_at',
         'closed_at',
         'metadata',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [
@@ -296,7 +298,7 @@ class Incident extends Model
                 'marker_color' => $markerColor,
                 'nguoi_dung' => $reporterName,
             ],
-            'geometry' => $geometry ? json_decode($geometry->geojson) : null,
+            'geometry' => $geomData,
         ];
     }
 
