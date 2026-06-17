@@ -245,10 +245,10 @@ class Incident extends Model
         $geomData = null;
         if ($geometry && $geometry->geojson) {
             $geomData = json_decode($geometry->geojson);
-        } elseif (! empty($this->location) && isset($this->location['lng']) && isset($this->location['lat'])) {
+        } elseif (! empty($this->latitude) && ! empty($this->longitude)) {
             $geomData = [
                 'type' => 'Point',
-                'coordinates' => [(float) $this->location['lng'], (float) $this->location['lat']],
+                'coordinates' => [(float) $this->longitude, (float) $this->latitude],
             ];
         }
 

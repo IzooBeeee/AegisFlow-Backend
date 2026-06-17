@@ -306,7 +306,8 @@ class DemoDataSeeder extends Seeder
             $incident = Incident::updateOrCreate(
                 ['title' => $incData['title']],
                 array_merge($incData, [
-                    'location' => json_encode(['lat' => $lat, 'lng' => $lng]),
+                    'latitude'   => $lat,
+                    'longitude'  => $lng,
                     'created_at' => $now->copy()->subMinutes(45 + ($index * 15)),
                 ])
             );
