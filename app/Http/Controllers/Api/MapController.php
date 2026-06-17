@@ -305,7 +305,12 @@ class MapController extends Controller
                 ],
                 'geometry' => $geometry,
             ];
-        })->filter(fn (array $feature) => DaNangLandMask::featureIsLikelyLand($feature))->values();
+        })->filter(function (array $feature) {
+            $g = $feature["geometry"] ?? null; if (!$g) return false;
+            $pt = $g["type"] === "LineString" ? ($g["coordinates"][0] ?? null) : ($g["coordinates"] ?? null);
+            if (!is_array($pt) || !isset($pt[0], $pt[1])) return false;
+            return (float)$pt[1] > 15.8 && (float)$pt[1] < 16.3 && (float)$pt[0] > 107.8 && (float)$pt[0] < 108.5;
+        })->values();
 
         return response()->json([
             'type' => 'FeatureCollection',
@@ -392,7 +397,12 @@ class MapController extends Controller
                     'coordinates' => [(float) $s->longitude, (float) $s->latitude],
                 ],
             ];
-        })->filter(fn (array $feature) => DaNangLandMask::featureIsLikelyLand($feature))->values();
+        })->filter(function (array $feature) {
+            $g = $feature["geometry"] ?? null; if (!$g) return false;
+            $pt = $g["type"] === "LineString" ? ($g["coordinates"][0] ?? null) : ($g["coordinates"] ?? null);
+            if (!is_array($pt) || !isset($pt[0], $pt[1])) return false;
+            return (float)$pt[1] > 15.8 && (float)$pt[1] < 16.3 && (float)$pt[0] > 107.8 && (float)$pt[0] < 108.5;
+        })->values();
 
         return response()->json([
             'type' => 'FeatureCollection',
@@ -458,7 +468,12 @@ class MapController extends Controller
                     'coordinates' => [$s->longitude, $s->latitude],
                 ],
             ];
-        })->filter(fn (array $feature) => DaNangLandMask::featureIsLikelyLand($feature))->values();
+        })->filter(function (array $feature) {
+            $g = $feature["geometry"] ?? null; if (!$g) return false;
+            $pt = $g["type"] === "LineString" ? ($g["coordinates"][0] ?? null) : ($g["coordinates"] ?? null);
+            if (!is_array($pt) || !isset($pt[0], $pt[1])) return false;
+            return (float)$pt[1] > 15.8 && (float)$pt[1] < 16.3 && (float)$pt[0] > 107.8 && (float)$pt[0] < 108.5;
+        })->values();
 
         return response()->json([
             'type' => 'FeatureCollection',
