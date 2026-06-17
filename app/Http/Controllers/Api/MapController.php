@@ -333,6 +333,7 @@ class MapController extends Controller
             $shift = 0;
             $result = 0;
             do {
+                if ($index >= $len) break 2;
                 $b = ord($encoded[$index++]) - 63;
                 $result |= ($b & 0x1F) << $shift;
                 $shift += 5;
@@ -343,6 +344,7 @@ class MapController extends Controller
             $shift = 0;
             $result = 0;
             do {
+                if ($index >= $len) break 2;
                 $b = ord($encoded[$index++]) - 63;
                 $result |= ($b & 0x1F) << $shift;
                 $shift += 5;
