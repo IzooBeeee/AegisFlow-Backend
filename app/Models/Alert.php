@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Events\AlertCreated;
+use App\Notifications\AlertNotification;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 
 /**
@@ -62,7 +66,7 @@ class Alert extends Model
         });
 
         static::created(function (Alert $alert) {
-            event(new \App\Events\AlertCreated($alert));
+            event(new AlertCreated($alert));
         });
     }
 
@@ -71,6 +75,7 @@ class Alert extends Model
         $prefix = 'ALT';
         $date = now()->format('Ymd');
         $random = strtoupper(Str::random(4));
+
         return "{$prefix}-{$date}-{$random}";
     }
 
@@ -98,10 +103,10 @@ class Alert extends Model
         return $this->belongsTo(Incident::class, 'related_incident_id');
     }
 
-    public function notifications(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function notifications(): HasMany
     {
-        return $this->hasMany(\Illuminate\Notifications\DatabaseNotification::class, 'data->alert_id')
-            ->where('type', \App\Notifications\AlertNotification::class);
+        return $this->hasMany(DatabaseNotification::class, 'data->alert_id')
+            ->where('type', AlertNotification::class);
     }
 
     // ============================================================

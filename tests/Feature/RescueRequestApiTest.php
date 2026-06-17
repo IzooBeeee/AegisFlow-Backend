@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Enums\FloodZoneStatusEnum;
-use App\Enums\UrgencyEnum;
-use App\Models\FloodZone;
 use App\Models\RescueRequest;
 use App\Models\RescueTeam;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RescueRequestApiTest extends TestCase
@@ -17,6 +15,7 @@ class RescueRequestApiTest extends TestCase
     use RefreshDatabase;
 
     protected User $citizen;
+
     protected User $operator;
 
     protected function setUp(): void
@@ -24,12 +23,12 @@ class RescueRequestApiTest extends TestCase
         parent::setUp();
 
         $this->citizen = User::factory()->create();
-        $this->citizen->assignRole(\Spatie\Permission\Models\Role::create([
+        $this->citizen->assignRole(Role::create([
             'name' => 'citizen', 'display_name' => 'Công dân', 'slug' => 'citizen',
         ]));
 
         $this->operator = User::factory()->create();
-        $this->operator->assignRole(\Spatie\Permission\Models\Role::create([
+        $this->operator->assignRole(Role::create([
             'name' => 'rescue_operator', 'display_name' => 'Điều phối viên', 'slug' => 'rescue_operator',
         ]));
     }

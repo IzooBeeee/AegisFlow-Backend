@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class RescueRequest extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'request_number',
@@ -80,6 +80,7 @@ class RescueRequest extends Model
         $prefix = 'RRQ';
         $date = now()->format('Ymd');
         $random = strtoupper(Str::random(4));
+
         return "{$prefix}-{$date}-{$random}";
     }
 
@@ -134,12 +135,12 @@ class RescueRequest extends Model
         }
 
         try {
-            $result = DB::selectOne("
+            $result = DB::selectOne('
                         SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
                         FROM rescue_requests WHERE id = ?
-                    ", [$this->id]);
-            
-                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+                    ', [$this->id]);
+
+            return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
             return null;
         }

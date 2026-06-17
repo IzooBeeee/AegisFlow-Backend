@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * SupplyStock — Tồn kho vật tư tại điểm trú ẩn / đội cứu hộ
@@ -48,7 +49,7 @@ class SupplyStock extends Model
         return $this->belongsTo(ReliefSupply::class, 'supply_id');
     }
 
-    public function stockable(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    public function stockable(): MorphTo
     {
         return $this->morphTo();
     }

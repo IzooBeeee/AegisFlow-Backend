@@ -2,15 +2,15 @@
 
 namespace Database\Factories;
 
-use App\Enums\UrgencyEnum;
 use App\Enums\RescueCategoryEnum;
 use App\Enums\RescueRequestStatusEnum;
+use App\Enums\UrgencyEnum;
 use App\Models\RescueRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RescueRequest>
+ * @extends Factory<RescueRequest>
  */
 class RescueRequestFactory extends Factory
 {

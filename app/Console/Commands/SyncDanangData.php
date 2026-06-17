@@ -37,6 +37,7 @@ class SyncDanangData extends Command
         $this->info("Successfully synced {$reportsCount} flood reports.");
 
         $this->info('Sync complete!');
+
         return self::SUCCESS;
     }
 }

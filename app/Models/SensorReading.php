@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 
 /**
  * SensorReading — Dữ liệu cảm biến (time-series)
@@ -21,6 +19,7 @@ class SensorReading extends Model
 
     // Không có timestamps mặc định — dùng recorded_at làm partition key
     public const CREATED_AT = 'recorded_at';
+
     public const UPDATED_AT = null;
 
     protected $fillable = [
@@ -119,7 +118,7 @@ class SensorReading extends Model
     /**
      * Lấy readings gần đây của sensor
      */
-    public static function getRecentForSensor(int $sensorId, int $hours = 24): \Illuminate\Database\Eloquent\Collection
+    public static function getRecentForSensor(int $sensorId, int $hours = 24): Collection
     {
         return static::fromSensor($sensorId)
             ->where('recorded_at', '>=', now()->subHours($hours))

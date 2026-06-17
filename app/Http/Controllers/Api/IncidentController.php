@@ -7,6 +7,7 @@ use App\Enums\AlertTypeEnum;
 use App\Enums\IncidentSourceEnum;
 use App\Enums\IncidentStatusEnum;
 use App\Events\IncidentCreated;
+use App\Events\NotificationSent;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
@@ -80,9 +81,9 @@ class IncidentController extends Controller
 
         // Nearby filter by lat/lng
         if ($request->filled('lat') && $request->filled('lng')) {
-            $lat = (float)$request->lat;
-            $lng = (float)$request->lng;
-            $radius = (float)$request->get('radius', 5); // km
+            $lat = (float) $request->lat;
+            $lng = (float) $request->lng;
+            $radius = (float) $request->get('radius', 5); // km
             if (DB::connection()->getDriverName() === 'pgsql') {
                 $radiusMeters = $radius * 1000;
                 $query->selectRaw('*, (ST_Distance(geometry::geography, ST_MakePoint(?, ?)::geography) / 1000.0) AS distance', [$lng, $lat])
@@ -173,11 +174,12 @@ class IncidentController extends Controller
         // Lưu PostGIS geometry
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                            [$data['longitude'], $data['latitude'], $incident->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                    [$data['longitude'], $data['latitude'], $incident->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         // Map incident type to alert type
@@ -207,11 +209,12 @@ class IncidentController extends Controller
 
             if (isset($data['latitude']) && isset($data['longitude']) && DB::connection()->getDriverName() === 'pgsql') {
                 try {
-            DB::statement(
-                                'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                                [$data['longitude'], $data['latitude'], $alert->id]
-                            );
-        } catch (\Exception $e) {}
+                    DB::statement(
+                        'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                        [$data['longitude'], $data['latitude'], $alert->id]
+                    );
+                } catch (\Exception $e) {
+                }
             }
         }
 
@@ -258,16 +261,69 @@ class IncidentController extends Controller
         // Cập nhật geometry
         if (isset($data['latitude'], $data['longitude']) && DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                            [$data['longitude'], $data['latitude'], $incident->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE incidents SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                    [$data['longitude'], $data['latitude'], $incident->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         // Log events nếu có thay đổi
         if (isset($data['status']) && $data['status'] !== $oldStatus) {
             $incident->logEvent('status_changed', "Đổi trạng thái: {$oldStatus} → {$data['status']}", $request->user()->id);
+
+            if ($incident->reported_by) {
+                $statusLabel = match ($data['status']) {
+                    'reported' => 'Đã báo cáo',
+                    'verified' => 'Đã xác minh',
+                    'responding' => 'Đang xử lý',
+                    'resolved' => 'Đã giải quyết',
+                    'closed' => 'Đã đóng',
+                    default => $data['status'],
+                };
+
+                $title = 'Cập nhật trạng thái sự cố';
+                $body = "Sự cố \"{$incident->title}\" đã được đổi trạng thái sang: {$statusLabel}";
+
+                $notifId = DB::table('notifications')->insertGetId([
+                    'title' => $title,
+                    'body' => $body,
+                    'data' => json_encode([
+                        'id' => $incident->id,
+                        'type' => 'report_status_update',
+                        'incident_id' => $incident->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $data['status'],
+                    ]),
+                    'notification_type' => 'report_status_update',
+                    'target_type' => 'user',
+                    'target_id' => $incident->reported_by,
+                    'channel' => 'all',
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Broadcast event
+                event(new NotificationSent($incident->reported_by, [
+                    'id' => $notifId,
+                    'type' => 'report_status_update',
+                    'title' => $title,
+                    'message' => $body,
+                    'noi_dung' => $body,
+                    'tieu_de' => $title,
+                    'data' => [
+                        'id' => $incident->id,
+                        'type' => 'report_status_update',
+                        'incident_id' => $incident->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $data['status'],
+                    ],
+                    'created_at' => now()->toIso8601String(),
+                ]));
+            }
         }
 
         if (isset($data['severity']) && $data['severity'] !== $oldSeverity) {

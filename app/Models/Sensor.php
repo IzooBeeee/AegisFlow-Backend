@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\SensorStatusEnum;
-use App\Enums\SensorTypeEnum;
 use App\Traits\HasTranslatedEnums;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,14 +30,14 @@ use Illuminate\Support\Facades\DB;
  * @property int $reading_interval_seconds
  * @property float|null $alert_threshold
  * @property float|null $danger_threshold
- * @property \Carbon\Carbon|null $last_reading_at
+ * @property Carbon|null $last_reading_at
  * @property float|null $last_value
  * @property array|null $metadata
  * @property bool $is_active
  */
 class Sensor extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'external_id',
@@ -103,7 +103,7 @@ class Sensor extends Model
             ->limit(100);
     }
 
-    public function edge(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function edge(): BelongsTo
     {
         return $this->belongsTo(MapEdge::class, 'edge_id');
     }
@@ -154,12 +154,12 @@ class Sensor extends Model
     public function getLocationAttribute(): ?array
     {
         try {
-            $result = DB::selectOne("
+            $result = DB::selectOne('
                         SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
                         FROM sensors WHERE id = ?
-                    ", [$this->id]);
-            
-                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+                    ', [$this->id]);
+
+            return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
             return null;
         }

@@ -15,9 +15,10 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::with('permissions')->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => $roles
+            'data' => $roles,
         ]);
     }
 
@@ -27,9 +28,10 @@ class RoleController extends Controller
     public function permissions()
     {
         $permissions = Permission::all()->groupBy('group_name');
+
         return response()->json([
             'status' => 'success',
-            'data' => $permissions
+            'data' => $permissions,
         ]);
     }
 
@@ -40,11 +42,11 @@ class RoleController extends Controller
     {
         $request->validate([
             'permissions' => 'required|array',
-            'permissions.*' => 'string|exists:permissions,name'
+            'permissions.*' => 'string|exists:permissions,name',
         ]);
 
         $role = Role::findOrFail($id);
-        
+
         // Prevent modifying the city_admin role if you want to keep it strictly with all permissions
         // if ($role->name === 'city_admin') {
         //     return response()->json([
@@ -58,7 +60,7 @@ class RoleController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Permissions updated successfully',
-            'data' => $role->load('permissions')
+            'data' => $role->load('permissions'),
         ]);
     }
 }

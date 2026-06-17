@@ -7,7 +7,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * FcmChannel — Laravel Notification Channel cho Firebase Cloud Messaging
- * 
+ *
  * Sử dụng:
  * 1. Tạo notification class kế thừa Notification
  * 2. Thêm method toFcm() trả về payload

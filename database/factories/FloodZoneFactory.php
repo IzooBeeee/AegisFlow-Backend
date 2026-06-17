@@ -6,7 +6,7 @@ use App\Models\FloodZone;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\FloodZone>
+ * @extends Factory<FloodZone>
  */
 class FloodZoneFactory extends Factory
 {

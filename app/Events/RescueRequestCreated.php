@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use App\Models\RescueRequest;
 use App\Jobs\SendPushNotificationJob;
+use App\Models\RescueRequest;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -33,7 +33,7 @@ class RescueRequestCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('flood')
+            new Channel('flood'),
         ];
     }
 

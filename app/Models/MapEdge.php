@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\EvacuationRouteStatusEnum;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  */
 class MapEdge extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'external_id',
@@ -135,9 +134,9 @@ class MapEdge extends Model
     public function toGeoJson(): array
     {
         try {
-            $geometry = \Illuminate\Support\Facades\DB::selectOne("
+            $geometry = DB::selectOne('
             SELECT ST_AsGeoJSON(geometry) as geojson FROM map_edges WHERE id = ?
-        ", [$this->id]);
+        ', [$this->id]);
         } catch (\Exception $e) {
             $geometry = null;
         }

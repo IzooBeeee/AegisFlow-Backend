@@ -68,13 +68,13 @@ class RecommendationGenerator
                     $ctx['zone_name']
                 ),
                 [
-                    'signal'           => 'rapid_water_rise',
+                    'signal' => 'rapid_water_rise',
                     'water_level_trend' => $ctx['trend'],
-                    'current_level_m'  => $ctx['predicted_value'],
-                    'confidence'       => $ctx['confidence'],
-                    'reasoning'        => [
+                    'current_level_m' => $ctx['predicted_value'],
+                    'confidence' => $ctx['confidence'],
+                    'reasoning' => [
                         sprintf('Tốc độ dâng nước %.2f m/h vượt ngưỡng cảnh báo (0.3 m/h)', $ctx['trend']),
-                        'Mực nước có thể vượt ngưỡng nguy hiểm trong ' . round(max(0.5, ($ctx['danger_threshold'] - $ctx['predicted_value']) / max(0.01, $ctx['trend'])), 1) . ' giờ nữa',
+                        'Mực nước có thể vượt ngưỡng nguy hiểm trong '.round(max(0.5, ($ctx['danger_threshold'] - $ctx['predicted_value']) / max(0.01, $ctx['trend'])), 1).' giờ nữa',
                     ],
                 ]
             );
@@ -90,11 +90,11 @@ class RecommendationGenerator
                     $ctx['zone_name']
                 ),
                 [
-                    'signal'          => 'soil_saturation_high',
+                    'signal' => 'soil_saturation_high',
                     'soil_saturation' => $ctx['soil_saturation'],
-                    'rain_6h_mm'      => $ctx['rain_6h'],
-                    'confidence'      => $ctx['confidence'],
-                    'reasoning'       => [
+                    'rain_6h_mm' => $ctx['rain_6h'],
+                    'confidence' => $ctx['confidence'],
+                    'reasoning' => [
                         sprintf('Độ bão hòa đất %.0f%% — khả năng thấm gần như bằng 0', $ctx['soil_saturation']),
                         sprintf('Mưa tích lũy 6h: %.0fmm — vượt ngưỡng an toàn 40mm', $ctx['rain_6h']),
                         'Toàn bộ nước mưa sẽ chạy thẳng vào đường phố và kênh thoát nước',
@@ -109,7 +109,7 @@ class RecommendationGenerator
         }
 
         // Escalation: cùng vùng có prediction liên tục tăng → tuyến ưu tiên
-        if ($ctx['is_escalating'] && !in_array('critical', array_column($recs, 'type'))) {
+        if ($ctx['is_escalating'] && ! in_array('critical', array_column($recs, 'type'))) {
             $recs[] = $this->makeRec($prediction, RecommendationTypeEnum::PRIORITY_ROUTE->value,
                 sprintf(
                     'Rủi ro ngập tại %s đang leo thang qua %d dự báo liên tiếp — Kích hoạt tuyến ưu tiên',
@@ -117,10 +117,10 @@ class RecommendationGenerator
                     $ctx['escalation_count']
                 ),
                 [
-                    'signal'          => 'escalating_risk',
+                    'signal' => 'escalating_risk',
                     'escalation_count' => $ctx['escalation_count'],
-                    'confidence'      => $ctx['confidence'],
-                    'reasoning'       => [
+                    'confidence' => $ctx['confidence'],
+                    'reasoning' => [
                         sprintf('%d dự báo liên tiếp cho thấy rủi ro tăng dần tại %s', $ctx['escalation_count'], $ctx['zone_name']),
                         'Xu hướng leo thang yêu cầu can thiệp trước khi đạt đỉnh',
                     ],
@@ -141,21 +141,21 @@ class RecommendationGenerator
         $inputData = $prediction->input_data ?? [];
 
         // Trích contributing_factors từ AI service response
-        $factors     = $inputData['contributing_factors'] ?? [];
-        $tsFeatures  = $inputData['timeseries_features'] ?? [];
-        $trend       = (float) ($tsFeatures['water_level_trend'] ?? $factors['rising_trend'] ?? 0.0);
-        $rain6h      = (float) ($tsFeatures['rain_6h'] ?? $factors['rain_6h_accum'] ?? 0.0);
-        $soilSat     = (float) ($tsFeatures['soil_saturation'] ?? $factors['soil_saturation'] ?? 0.0);
+        $factors = $inputData['contributing_factors'] ?? [];
+        $tsFeatures = $inputData['timeseries_features'] ?? [];
+        $trend = (float) ($tsFeatures['water_level_trend'] ?? $factors['rising_trend'] ?? 0.0);
+        $rain6h = (float) ($tsFeatures['rain_6h'] ?? $factors['rain_6h_accum'] ?? 0.0);
+        $soilSat = (float) ($tsFeatures['soil_saturation'] ?? $factors['soil_saturation'] ?? 0.0);
 
-        $probability    = (float) ($prediction->probability ?? 0);
-        $confidence     = (float) ($prediction->confidence  ?? 0.5);
-        $severity       = $prediction->severity ?? 'low';
+        $probability = (float) ($prediction->probability ?? 0);
+        $confidence = (float) ($prediction->confidence ?? 0.5);
+        $severity = $prediction->severity ?? 'low';
         $predictedValue = (float) ($prediction->predicted_value ?? 0);
-        $horizonMin     = (int)   ($prediction->horizon_minutes ?? 60);
+        $horizonMin = (int) ($prediction->horizon_minutes ?? 60);
 
-        $alertThreshold  = (float) ($floodZone?->alert_threshold_m  ?? 1.5);
+        $alertThreshold = (float) ($floodZone?->alert_threshold_m ?? 1.5);
         $dangerThreshold = (float) ($floodZone?->danger_threshold_m ?? 3.0);
-        $zoneName        = $floodZone?->name ?? ($prediction->target_area ?? 'khu vực dự báo');
+        $zoneName = $floodZone?->name ?? ($prediction->target_area ?? 'khu vực dự báo');
 
         // Tổng hợp mức rủi ro từ nhiều tín hiệu
         $riskLevel = $this->computeRiskLevel($severity, $probability, $trend, $rain6h, $soilSat, $predictedValue, $dangerThreshold);
@@ -180,7 +180,7 @@ class RecommendationGenerator
 
         // Kiểm tra escalation: ≥3 prediction gần đây trong cùng zone với severity tăng
         $escalationCount = 0;
-        $isEscalating    = false;
+        $isEscalating = false;
         if ($floodZone) {
             $recentPreds = Prediction::where('flood_zone_id', $floodZone->id)
                 ->where('id', '!=', $prediction->id)
@@ -198,22 +198,22 @@ class RecommendationGenerator
         }
 
         return [
-            'risk_level'       => $riskLevel,
-            'severity'         => $severity,
-            'probability'      => $probability,
-            'confidence'       => $confidence,
-            'predicted_value'  => $predictedValue,
-            'horizon_min'      => $horizonMin,
-            'trend'            => $trend,
-            'rain_6h'          => $rain6h,
-            'soil_saturation'  => $soilSat,
-            'alert_threshold'  => $alertThreshold,
+            'risk_level' => $riskLevel,
+            'severity' => $severity,
+            'probability' => $probability,
+            'confidence' => $confidence,
+            'predicted_value' => $predictedValue,
+            'horizon_min' => $horizonMin,
+            'trend' => $trend,
+            'rain_6h' => $rain6h,
+            'soil_saturation' => $soilSat,
+            'alert_threshold' => $alertThreshold,
             'danger_threshold' => $dangerThreshold,
-            'zone_name'        => $zoneName,
-            'flood_zone'       => $floodZone,
-            'active_incident'  => $activeIncident,
-            'available_teams'  => $availableTeams,
-            'is_escalating'    => $isEscalating,
+            'zone_name' => $zoneName,
+            'flood_zone' => $floodZone,
+            'active_incident' => $activeIncident,
+            'available_teams' => $availableTeams,
+            'is_escalating' => $isEscalating,
             'escalation_count' => $escalationCount,
         ];
     }
@@ -230,36 +230,60 @@ class RecommendationGenerator
         // Severity từ model
         $score += match ($severity) {
             'critical' => 40,
-            'high'     => 30,
-            'medium'   => 15,
-            default    => 5,
+            'high' => 30,
+            'medium' => 15,
+            default => 5,
         };
 
         // Probability
-        if ($probability >= 0.85) $score += 25;
-        elseif ($probability >= 0.7)  $score += 18;
-        elseif ($probability >= 0.5)  $score += 10;
+        if ($probability >= 0.85) {
+            $score += 25;
+        } elseif ($probability >= 0.7) {
+            $score += 18;
+        } elseif ($probability >= 0.5) {
+            $score += 10;
+        }
 
         // Tốc độ dâng nước
-        if ($trend >= 0.4)  $score += 20;
-        elseif ($trend >= 0.2) $score += 12;
-        elseif ($trend >= 0.1) $score += 5;
+        if ($trend >= 0.4) {
+            $score += 20;
+        } elseif ($trend >= 0.2) {
+            $score += 12;
+        } elseif ($trend >= 0.1) {
+            $score += 5;
+        }
 
         // Mưa 6h
-        if ($rain6h >= 100) $score += 10;
-        elseif ($rain6h >= 50)  $score += 6;
+        if ($rain6h >= 100) {
+            $score += 10;
+        } elseif ($rain6h >= 50) {
+            $score += 6;
+        }
 
         // Đất bão hòa
-        if ($soilSat >= 80) $score += 8;
-        elseif ($soilSat >= 60)  $score += 4;
+        if ($soilSat >= 80) {
+            $score += 8;
+        } elseif ($soilSat >= 60) {
+            $score += 4;
+        }
 
         // Mực nước so với ngưỡng nguy hiểm
-        if ($predictedValue >= $dangerThreshold) $score += 15;
-        elseif ($predictedValue >= $dangerThreshold * 0.75) $score += 8;
+        if ($predictedValue >= $dangerThreshold) {
+            $score += 15;
+        } elseif ($predictedValue >= $dangerThreshold * 0.75) {
+            $score += 8;
+        }
 
-        if ($score >= 70) return 'critical';
-        if ($score >= 50) return 'high';
-        if ($score >= 30) return 'medium';
+        if ($score >= 70) {
+            return 'critical';
+        }
+        if ($score >= 50) {
+            return 'high';
+        }
+        if ($score >= 30) {
+            return 'medium';
+        }
+
         return 'low';
     }
 
@@ -280,15 +304,15 @@ class RecommendationGenerator
                 $zone, $prob, $ctx['predicted_value'], $ctx['danger_threshold']
             ),
             [
-                'action'      => 'immediate_evacuation',
-                'urgency'     => 'critical',
+                'action' => 'immediate_evacuation',
+                'urgency' => 'critical',
                 'probability' => $ctx['probability'],
-                'confidence'  => $ctx['confidence'],
+                'confidence' => $ctx['confidence'],
                 'predicted_water_level_m' => $ctx['predicted_value'],
-                'danger_threshold_m'      => $ctx['danger_threshold'],
-                'horizon_minutes'         => $ctx['horizon_min'],
-                'available_rescue_teams'  => $ctx['available_teams'],
-                'reasoning'   => $this->buildReasoning($ctx, 'evacuation'),
+                'danger_threshold_m' => $ctx['danger_threshold'],
+                'horizon_minutes' => $ctx['horizon_min'],
+                'available_rescue_teams' => $ctx['available_teams'],
+                'reasoning' => $this->buildReasoning($ctx, 'evacuation'),
             ]
         );
 
@@ -299,11 +323,11 @@ class RecommendationGenerator
                 $zone, $ctx['horizon_min']
             ),
             [
-                'action'     => 'broadcast_critical_alert',
-                'severity'   => 'critical',
+                'action' => 'broadcast_critical_alert',
+                'severity' => 'critical',
                 'confidence' => $ctx['confidence'],
                 'auto_dispatch_rescue' => $ctx['available_teams'] > 0,
-                'reasoning'  => $this->buildReasoning($ctx, 'alert'),
+                'reasoning' => $this->buildReasoning($ctx, 'alert'),
             ]
         );
         if ($this->publishAlert($prediction, $alertRec)) {
@@ -322,11 +346,11 @@ class RecommendationGenerator
                     $ctx['available_teams'], $zone
                 ),
                 [
-                    'action'          => 'dispatch_rescue_teams',
+                    'action' => 'dispatch_rescue_teams',
                     'teams_available' => $ctx['available_teams'],
-                    'target_zone'     => $zone,
-                    'confidence'      => $ctx['confidence'],
-                    'reasoning'       => $this->buildReasoning($ctx, 'dispatch'),
+                    'target_zone' => $zone,
+                    'confidence' => $ctx['confidence'],
+                    'reasoning' => $this->buildReasoning($ctx, 'dispatch'),
                 ]
             );
         }
@@ -347,11 +371,11 @@ class RecommendationGenerator
                 $zone, $prob, $ctx['horizon_min']
             ),
             [
-                'action'      => 'suggest_reroute',
+                'action' => 'suggest_reroute',
                 'probability' => $ctx['probability'],
-                'confidence'  => $ctx['confidence'],
+                'confidence' => $ctx['confidence'],
                 'horizon_minutes' => $ctx['horizon_min'],
-                'reasoning'   => $this->buildReasoning($ctx, 'reroute'),
+                'reasoning' => $this->buildReasoning($ctx, 'reroute'),
             ]
         );
 
@@ -362,11 +386,11 @@ class RecommendationGenerator
                 $zone, $prob
             ),
             [
-                'action'     => 'notify_residents',
-                'severity'   => 'high',
-                'radius_km'  => 2,
+                'action' => 'notify_residents',
+                'severity' => 'high',
+                'radius_km' => 2,
                 'confidence' => $ctx['confidence'],
-                'reasoning'  => $this->buildReasoning($ctx, 'alert'),
+                'reasoning' => $this->buildReasoning($ctx, 'alert'),
             ]
         );
         $recs[] = $alertRec;
@@ -384,11 +408,11 @@ class RecommendationGenerator
                 $ctx['horizon_min']
             ),
             [
-                'action'      => 'update_routes',
-                'severity'    => 'medium',
-                'confidence'  => $ctx['confidence'],
+                'action' => 'update_routes',
+                'severity' => 'medium',
+                'confidence' => $ctx['confidence'],
                 'horizon_minutes' => $ctx['horizon_min'],
-                'reasoning'   => $this->buildReasoning($ctx, 'reroute'),
+                'reasoning' => $this->buildReasoning($ctx, 'reroute'),
             ]
         );
     }
@@ -396,6 +420,7 @@ class RecommendationGenerator
     private function generateIncidentAwareRec(Prediction $prediction, array $ctx): Recommendation
     {
         $incident = $ctx['active_incident'];
+
         return $this->makeRec($prediction, RecommendationTypeEnum::SUPPLY_DISPATCH->value,
             sprintf(
                 'Sự cố "%s" đang xảy ra tại %s — AI dự báo tình trạng có thể xấu hơn (%.0f%% trong %d phút)',
@@ -405,13 +430,13 @@ class RecommendationGenerator
                 $ctx['horizon_min']
             ),
             [
-                'action'        => 'reinforce_incident_response',
-                'incident_id'   => $incident->id,
+                'action' => 'reinforce_incident_response',
+                'incident_id' => $incident->id,
                 'incident_status' => $incident->status,
-                'probability'   => $ctx['probability'],
-                'confidence'    => $ctx['confidence'],
+                'probability' => $ctx['probability'],
+                'confidence' => $ctx['confidence'],
                 'available_teams' => $ctx['available_teams'],
-                'reasoning'     => [
+                'reasoning' => [
                     sprintf('Sự cố "%s" đang ở trạng thái: %s', $incident->title, $incident->status),
                     sprintf('Dự báo AI: %.0f%% khả năng ngập tăng trong %d phút tới', round($ctx['probability'] * 100), $ctx['horizon_min']),
                     $ctx['available_teams'] > 0
@@ -489,18 +514,18 @@ class RecommendationGenerator
     ): Recommendation {
         return Recommendation::create([
             'prediction_id' => $prediction->id,
-            'incident_id'   => $incidentId ?? $prediction->incident_id,
-            'type'          => $type,
-            'description'   => $description,
-            'details'       => $details,
-            'status'        => RecommendationStatusEnum::PENDING->value,
+            'incident_id' => $incidentId ?? $prediction->incident_id,
+            'type' => $type,
+            'description' => $description,
+            'details' => $details,
+            'status' => RecommendationStatusEnum::PENDING->value,
         ]);
     }
 
     protected function publishAlert(Prediction $prediction, Recommendation $recommendation): ?Alert
     {
         $floodZone = $prediction->floodZone;
-        $zoneId    = $floodZone?->id;
+        $zoneId = $floodZone?->id;
 
         // Không tạo alert trùng trong 30 phút
         $recentQuery = Alert::active()
@@ -525,25 +550,25 @@ class RecommendationGenerator
         $area = $floodZone?->name ?: ($prediction->target_area ?? 'khu vực dự báo');
 
         $alert = Alert::create([
-            'title'       => '[AI] Cảnh báo ngập lụt — ' . $area,
+            'title' => '[AI] Cảnh báo ngập lụt — '.$area,
             'description' => sprintf(
                 '%s. Xác suất rủi ro %.0f%% trong %d phút tới.',
                 $recommendation->description,
                 ((float) $prediction->probability) * 100,
                 (int) $prediction->horizon_minutes
             ),
-            'alert_type'          => AlertTypeEnum::FLOOD_WARNING->value,
-            'severity'            => $severity,
-            'status'              => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'  => $floodZone?->district_id ? [(string) $floodZone->district_id] : [],
-            'affected_wards'      => [],
+            'alert_type' => AlertTypeEnum::FLOOD_WARNING->value,
+            'severity' => $severity,
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $floodZone?->district_id ? [(string) $floodZone->district_id] : [],
+            'affected_wards' => [],
             'affected_flood_zones' => $zoneId ? [(string) $zoneId] : [],
-            'radius_km'           => 2,
-            'effective_from'      => now(),
-            'effective_until'     => now()->addHours(6),
-            'source'              => 'ai',
+            'radius_km' => 2,
+            'effective_from' => now(),
+            'effective_until' => now()->addHours(6),
+            'source' => 'ai',
             'related_prediction_id' => $prediction->id,
-            'related_incident_id'   => $prediction->incident_id,
+            'related_incident_id' => $prediction->incident_id,
         ]);
 
         // PostGIS geometry nếu có
@@ -551,11 +576,12 @@ class RecommendationGenerator
         if ($centroid && DB::connection()->getDriverName() === 'pgsql') {
             try {
                 try {
-            DB::statement(
-                                'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                                [(float) $centroid['lng'], (float) $centroid['lat'], $alert->id]
-                            );
-        } catch (\Exception $e) {}
+                    DB::statement(
+                        'UPDATE alerts SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                        [(float) $centroid['lng'], (float) $centroid['lat'], $alert->id]
+                    );
+                } catch (\Exception $e) {
+                }
             } catch (\Exception) {
                 // PostGIS không có — bỏ qua
             }

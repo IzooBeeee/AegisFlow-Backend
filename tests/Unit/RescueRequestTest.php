@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\FloodZone;
 use App\Models\RescueRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

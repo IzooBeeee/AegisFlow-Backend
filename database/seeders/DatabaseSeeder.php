@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Xóa data cũ trước khi seed lại (tránh duplicate)
-        DB::statement('TRUNCATE TABLE recommendations, alerts, predictions, rescue_requests, incidents, sensors, rescue_teams, shelters, flood_zones, districts, ai_models RESTART IDENTITY CASCADE');
+        DB::statement('TRUNCATE TABLE notifications, recommendations, alerts, predictions, rescue_requests, incidents, sensors, rescue_teams, shelters, flood_zones, districts, ai_models RESTART IDENTITY CASCADE');
 
         $this->call([
             RolePermissionSeeder::class,

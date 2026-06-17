@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use App\Models\Alert;
 use App\Jobs\SendPushNotificationJob;
+use App\Models\Alert;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -52,7 +52,7 @@ class AlertCreated implements ShouldBroadcastNow
     {
         // Chỉ gửi notification nếu là alert có severity cao
         $highSeverity = ['high', 'critical'];
-        
+
         if (in_array($this->alert->severity, $highSeverity)) {
             SendPushNotificationJob::dispatch('alert', [
                 'alert_id' => $this->alert->id,
@@ -66,7 +66,7 @@ class AlertCreated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel('flood')
+            new Channel('flood'),
         ];
     }
 
@@ -85,9 +85,9 @@ class AlertCreated implements ShouldBroadcastNow
     {
         $geometry = null;
         if (! empty($this->alert->geometry)) {
-            if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql') {
-                $result = \Illuminate\Support\Facades\DB::selectOne(
-                    "SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?",
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                $result = DB::selectOne(
+                    'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
                     [$this->alert->id]
                 );
                 $geometry = $result?->geojson ? json_decode($result->geojson) : null;

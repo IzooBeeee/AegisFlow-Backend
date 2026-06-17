@@ -6,6 +6,7 @@ use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
@@ -82,7 +83,7 @@ class EvacuationRoute extends Model
             ->orderBy('sequence_order');
     }
 
-    public function edges(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function edges(): BelongsToMany
     {
         return $this->belongsToMany(MapEdge::class, 'evacuation_route_segments', 'route_id', 'edge_id')
             ->withPivot('sequence_order', 'is_flood_prone', 'risk_level');
@@ -150,7 +151,7 @@ class EvacuationRoute extends Model
         $encoded = '';
 
         while ($sgnNum >= 0x20) {
-            $encoded .= chr((0x20 | ($sgnNum & 0x1f)) + 63);
+            $encoded .= chr((0x20 | ($sgnNum & 0x1F)) + 63);
             $sgnNum >>= 5;
         }
 
@@ -166,7 +167,7 @@ class EvacuationRoute extends Model
 
         for ($i = 0; $i < strlen($encoded); $i++) {
             $ordVal = ord($encoded[$i]) - 63;
-            $result |= ($ordVal & 0x1f) << $shift;
+            $result |= ($ordVal & 0x1F) << $shift;
             $shift += 5;
 
             if ($ordVal < 0x20) {
@@ -208,11 +209,11 @@ class EvacuationRoute extends Model
         }
 
         try {
-            $result = DB::selectOne("
+            $result = DB::selectOne('
                         SELECT ST_AsGeoJSON(geometry) as geojson FROM evacuation_routes WHERE id = ?
-                    ", [$this->id]);
-            
-                    return $result ? json_decode($result->geojson) : null;
+                    ', [$this->id]);
+
+            return $result ? json_decode($result->geojson) : null;
         } catch (\Exception $e) {
             return null;
         }

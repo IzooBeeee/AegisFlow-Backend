@@ -19,9 +19,6 @@ trait HasTranslatedEnums
 {
     /**
      * Lấy label dịch cho giá trị enum
-     *
-     * @param  string  $field
-     * @return string
      */
     public function translated(string $field): string
     {
@@ -39,9 +36,6 @@ trait HasTranslatedEnums
 
     /**
      * Lấy tất cả options cho một enum field
-     *
-     * @param  string  $field
-     * @return array
      */
     public function enumOptions(string $field): array
     {
@@ -64,21 +58,19 @@ trait HasTranslatedEnums
     public function enumGroup(string $field): ?string
     {
         $map = property_exists(static::class, 'translatedEnums') ? static::$translatedEnums : [];
+
         return $map[$field] ?? null;
     }
 
     /**
      * Lấy tất cả giá trị enum từ BackedEnum hoặc raw array
-     *
-     * @param  string  $field
-     * @return array
      */
     protected static function getEnumCases(string $field): array
     {
-        $fillable = (new static())->getFillable();
+        $fillable = (new static)->getFillable();
 
         // Nếu field không phải enum, trả về rỗng
-        if (! in_array($field, $fillable) && ! property_exists(new static(), $field)) {
+        if (! in_array($field, $fillable) && ! property_exists(new static, $field)) {
             return [];
         }
 
@@ -105,9 +97,6 @@ trait HasTranslatedEnums
 
     /**
      * Tìm enum class cho field (đặt tên theo convention)
-     *
-     * @param  string  $field
-     * @return string|null
      */
     protected static function getEnumClass(string $field): ?string
     {

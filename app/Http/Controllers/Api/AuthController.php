@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -13,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
@@ -72,7 +72,7 @@ class AuthController extends Controller
         ]);
 
         // Gán vai trò mặc định: citizen
-        $citizenRole = \Spatie\Permission\Models\Role::where('name', 'citizen')->first();
+        $citizenRole = Role::where('name', 'citizen')->first();
         if ($citizenRole) {
             $user->assignRole($citizenRole);
         }
@@ -146,7 +146,7 @@ class AuthController extends Controller
 
         $user = $request->user();
         $path = $request->file('avatar')->store('uploads/avatars', 'public');
-        $url = asset('storage/' . $path);
+        $url = asset('storage/'.$path);
 
         $user->update(['avatar' => $url]);
 
@@ -204,7 +204,7 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $data['email'])->first();
-        if (!$user) {
+        if (! $user) {
             return ApiResponse::error('Email không tồn tại trong hệ thống', 404);
         }
 
@@ -222,7 +222,7 @@ class AuthController extends Controller
             });
         } catch (\Exception $e) {
             // Log nhưng vẫn trả success (dev mode có thể chưa config mail)
-            \Log::warning('Mail send failed: ' . $e->getMessage());
+            \Log::warning('Mail send failed: '.$e->getMessage());
         }
 
         return ApiResponse::success(null, 'Mã OTP đã được gửi đến email của bạn');
@@ -243,17 +243,18 @@ class AuthController extends Controller
             ->where('email', $data['username'])
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return response()->json(['status' => false, 'message' => 'Không tìm thấy yêu cầu đặt lại mật khẩu'], 400);
         }
 
         // Kiểm tra hết hạn (10 phút)
         if (now()->diffInMinutes($record->created_at) > 10) {
             DB::table('password_reset_tokens')->where('email', $data['username'])->delete();
+
             return response()->json(['status' => false, 'message' => 'Mã OTP đã hết hạn'], 400);
         }
 
-        if (!Hash::check($data['otp'], $record->token)) {
+        if (! Hash::check($data['otp'], $record->token)) {
             return response()->json(['status' => false, 'message' => 'Mã OTP không chính xác'], 400);
         }
 
@@ -286,7 +287,7 @@ class AuthController extends Controller
             ->where('email', $data['email'])
             ->first();
 
-        if (!$record || !Hash::check($data['token'], $record->token)) {
+        if (! $record || ! Hash::check($data['token'], $record->token)) {
             return ApiResponse::error('Token không hợp lệ hoặc đã hết hạn', 400);
         }
 
@@ -314,16 +315,17 @@ class AuthController extends Controller
             ->where('email', $data['email'])
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return response()->json(['status' => false, 'message' => 'Không tìm thấy mã xác thực'], 400);
         }
 
         if (now()->diffInMinutes($record->created_at) > 10) {
             DB::table('password_reset_tokens')->where('email', $data['email'])->delete();
+
             return response()->json(['status' => false, 'message' => 'Mã OTP đã hết hạn'], 400);
         }
 
-        if (!Hash::check($data['otp'], $record->token)) {
+        if (! Hash::check($data['otp'], $record->token)) {
             return response()->json(['status' => false, 'message' => 'Mã OTP không chính xác'], 400);
         }
 
@@ -350,7 +352,7 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $data['username'])->first();
-        if (!$user) {
+        if (! $user) {
             return ApiResponse::error('Email không tồn tại', 404);
         }
 
@@ -366,7 +368,7 @@ class AuthController extends Controller
                 $message->to($data['username'])->subject('AegisFlow - Mã xác thực OTP');
             });
         } catch (\Exception $e) {
-            \Log::warning('Mail send failed: ' . $e->getMessage());
+            \Log::warning('Mail send failed: '.$e->getMessage());
         }
 
         return ApiResponse::success(null, 'Mã OTP đã được gửi lại');

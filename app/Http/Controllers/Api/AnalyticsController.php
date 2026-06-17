@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-
 use App\Helpers\ApiResponse;
-use App\Models\DashboardMetric;
+use App\Http\Controllers\Controller;
 use App\Models\FloodZone;
 use App\Models\Incident;
 use App\Models\RescueRequest;

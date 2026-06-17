@@ -2,23 +2,26 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * FcmPushService — Gửi notification qua Firebase Cloud Messaging
+ * FcmPushService — Firebase Cloud Messaging v1 API (OAuth2 Service Account)
  */
 class FcmPushService
 {
-    private string $serverKey;
     private string $projectId;
-    private string $apiUrl;
+
+    private string $credentialsPath;
+
+    private string $fcmUrl;
 
     public function __construct()
     {
-        $this->serverKey = config('firebase.server_key');
         $this->projectId = config('firebase.project_id');
-        $this->apiUrl = 'https://fcm.googleapis.com/fcm/send';
+        $this->credentialsPath = config('firebase.credentials_path');
+        $this->fcmUrl = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
     }
 
     /**
@@ -31,41 +34,8 @@ class FcmPushService
         array $data = [],
         string $priority = 'high'
     ): bool {
-        $payload = [
-            'to' => $token,
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-                'badge' => '1',
-            ],
-            'data' => $data,
-            'android' => [
-                'priority' => $priority,
-                'notification' => [
-                    'channel_id' => 'aegisflow_alerts',
-                    'sound' => 'default',
-                    'priority' => 'high',
-                    'default_vibrate_timings' => true,
-                    'default_sound' => true,
-                ],
-            ],
-            'apns' => [
-                'payload' => [
-                    'aps' => [
-                        'sound' => 'default',
-                        'badge' => 1,
-                        'content-available' => 1,
-                    ],
-                ],
-                'headers' => [
-                    'apns-priority' => '10',
-                    'apns-push-type' => 'alert',
-                ],
-            ],
-        ];
-
-        return $this->send($payload);
+        $message = $this->buildMessage($token, $title, $body, $data, $priority);
+        return $this->sendV1(['message' => $message]);
     }
 
     /**
@@ -82,151 +52,19 @@ class FcmPushService
             return ['success' => 0, 'failure' => 0];
         }
 
-        $payload = [
-            'registration_ids' => $tokens,
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-                'badge' => '1',
-            ],
-            'data' => $data,
-            'android' => [
-                'priority' => $priority,
-            ],
-            'apns' => [
-                'payload' => [
-                    'aps' => [
-                        'sound' => 'default',
-                        'badge' => 1,
-                    ],
-                ],
-            ],
-        ];
+        $success = 0;
+        $failure = 0;
 
-        $result = $this->send($payload);
-
-        // Trả về kết quả chi tiết
-        return [
-            'success' => $result ? count($tokens) : 0,
-            'failure' => $result ? 0 : count($tokens),
-        ];
-    }
-
-    /**
-     * Gửi notification đến một topic
-     */
-    public function sendToTopic(
-        string $topic,
-        string $title,
-        string $body,
-        array $data = [],
-        string $priority = 'high'
-    ): bool {
-        $payload = [
-            'to' => "/topics/{$topic}",
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-            ],
-            'data' => $data,
-            'android' => [
-                'priority' => $priority,
-            ],
-        ];
-
-        return $this->send($payload);
-    }
-
-    /**
-     * Subscribe device tokens vào topic
-     */
-    public function subscribeToTopic(array $tokens, string $topic): bool
-    {
-        $payload = [
-            'registration_tokens' => $tokens,
-            'to' => "/topics/{$topic}",
-        ];
-
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->serverKey,
-                'Content-Type' => 'application/json',
-            ])->post('https://iid.googleapis.com/iid/v1:batchAdd', $payload);
-
-            return $response->successful();
-        } catch (\Exception $e) {
-            Log::error('FCM Subscribe to topic failed', [
-                'topic' => $topic,
-                'error' => $e->getMessage(),
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * Unsubscribe device tokens khỏi topic
-     */
-    public function unsubscribeFromTopic(array $tokens, string $topic): bool
-    {
-        $payload = [
-            'registration_tokens' => $tokens,
-            'to' => "/topics/{$topic}",
-        ];
-
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->serverKey,
-                'Content-Type' => 'application/json',
-            ])->post('https://iid.googleapis.com/iid/v1:batchRemove', $payload);
-
-            return $response->successful();
-        } catch (\Exception $e) {
-            Log::error('FCM Unsubscribe from topic failed', [
-                'topic' => $topic,
-                'error' => $e->getMessage(),
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * Gửi payload đến FCM API
-     */
-    protected function send(array $payload): bool
-    {
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->serverKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->apiUrl, $payload);
-
-            if ($response->successful()) {
-                $result = $response->json();
-
-                Log::info('FCM Push sent', [
-                    'success' => $result['success'] ?? 0,
-                    'failure' => $result['failure'] ?? 0,
-                ]);
-
-                return ($result['success'] ?? 0) > 0;
+        foreach ($tokens as $token) {
+            $message = $this->buildMessage($token, $title, $body, $data, $priority);
+            if ($this->sendV1(['message' => $message])) {
+                $success++;
+            } else {
+                $failure++;
             }
-
-            Log::error('FCM Push failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return false;
-        } catch (\Exception $e) {
-            Log::error('FCM Push exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return false;
         }
+
+        return ['success' => $success, 'failure' => $failure];
     }
 
     /**
@@ -234,6 +72,162 @@ class FcmPushService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->serverKey) && !empty($this->projectId);
+        return ! empty($this->projectId) && file_exists($this->credentialsPath);
+    }
+
+    /**
+     * Build FCM v1 message payload cho một token
+     */
+    protected function buildMessage(
+        string $token,
+        string $title,
+        string $body,
+        array $data,
+        string $priority
+    ): array {
+        // FCM v1 data values must be strings
+        $stringData = array_map('strval', $data);
+
+        return [
+            'token' => $token,
+            'notification' => [
+                'title' => $title,
+                'body' => $body,
+            ],
+            'data' => $stringData,
+            'android' => [
+                'priority' => strtoupper($priority) === 'HIGH' ? 'HIGH' : 'NORMAL',
+                'notification' => [
+                    'channel_id' => config('firebase.android_channel_id', 'aegisflow_alerts'),
+                    'sound' => 'default',
+                    'default_vibrate_timings' => true,
+                ],
+            ],
+            'apns' => [
+                'headers' => [
+                    'apns-priority' => '10',
+                    'apns-push-type' => 'alert',
+                ],
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                        'badge' => 1,
+                        'content-available' => 1,
+                        'mutable-content' => 1,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Gửi message qua FCM v1 API
+     */
+    protected function sendV1(array $payload): bool
+    {
+        $accessToken = $this->getAccessToken();
+        if (! $accessToken) {
+            return false;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer '.$accessToken,
+                'Content-Type' => 'application/json',
+            ])->post($this->fcmUrl, $payload);
+
+            if ($response->successful()) {
+                Log::info('FCM v1 push sent', ['name' => $response->json('name')]);
+                return true;
+            }
+
+            Log::error('FCM v1 push failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('FCM v1 push exception', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Lấy OAuth2 access token từ Service Account (cached 55 phút)
+     */
+    protected function getAccessToken(): ?string
+    {
+        return Cache::remember('fcm_access_token', 3300, function () {
+            return $this->fetchAccessToken();
+        });
+    }
+
+    /**
+     * Tạo JWT và đổi lấy access token từ Google OAuth2
+     */
+    protected function fetchAccessToken(): ?string
+    {
+        if (! file_exists($this->credentialsPath)) {
+            Log::error('FCM credentials file not found', ['path' => $this->credentialsPath]);
+            return null;
+        }
+
+        $creds = json_decode(file_get_contents($this->credentialsPath), true);
+        if (empty($creds['private_key']) || empty($creds['client_email'])) {
+            Log::error('FCM credentials missing private_key or client_email');
+            return null;
+        }
+
+        $now = time();
+        $header = $this->base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $claims = $this->base64UrlEncode(json_encode([
+            'iss' => $creds['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud' => 'https://oauth2.googleapis.com/token',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ]));
+
+        $signingInput = "{$header}.{$claims}";
+        $privateKey = openssl_pkey_get_private($creds['private_key']);
+        if (! $privateKey) {
+            Log::error('FCM failed to load private key');
+            return null;
+        }
+
+        $signature = '';
+        if (! openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
+            Log::error('FCM JWT signing failed');
+            return null;
+        }
+
+        $jwt = "{$signingInput}.".$this->base64UrlEncode($signature);
+
+        try {
+            $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion' => $jwt,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json('access_token');
+            }
+
+            Log::error('FCM token exchange failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('FCM token exchange exception', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    private function base64UrlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

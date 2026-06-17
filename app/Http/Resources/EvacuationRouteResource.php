@@ -56,6 +56,7 @@ class EvacuationRouteResource extends JsonResource
         }
         $hours = intdiv($minutes, 60);
         $remaining = $minutes % 60;
+
         return "{$hours}h{$remaining}p";
     }
 }

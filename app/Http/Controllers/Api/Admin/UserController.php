@@ -8,8 +8,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -208,6 +208,7 @@ class UserController extends Controller
         $allPermissions = Permission::orderBy('name')->get();
         $groupedPermissions = $allPermissions->groupBy(function ($permission) {
             $parts = explode('.', $permission->name);
+
             return $parts[0];
         })->map(function ($permissions, $group) {
             return [

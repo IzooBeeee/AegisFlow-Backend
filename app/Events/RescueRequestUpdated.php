@@ -4,7 +4,7 @@ namespace App\Events;
 
 use App\Models\RescueRequest;
 use App\Models\User;
-use App\Jobs\SendPushNotificationJob;
+use App\Services\FcmPushService;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -16,7 +16,9 @@ class RescueRequestUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $oldStatus;
+
     public string $newStatus;
+
     public ?User $reporter;
 
     public function __construct(
@@ -62,7 +64,7 @@ class RescueRequestUpdated implements ShouldBroadcast
                     $title = "Cập nhật yêu cầu cứu hộ #{$this->rescueRequest->id}";
                     $body = "Trạng thái: {$statusLabel}";
 
-                    $fcm = app(\App\Services\FcmPushService::class);
+                    $fcm = app(FcmPushService::class);
                     $fcm->sendToTokens($tokens, $title, $body, [
                         'type' => 'rescue_status_update',
                         'rescue_id' => (string) $this->rescueRequest->id,
@@ -77,7 +79,7 @@ class RescueRequestUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('flood')
+            new Channel('flood'),
         ];
     }
 

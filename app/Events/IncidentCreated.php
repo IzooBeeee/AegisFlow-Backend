@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use App\Models\Incident;
 use App\Jobs\SendPushNotificationJob;
+use App\Models\Incident;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -34,7 +34,7 @@ class IncidentCreated implements ShouldBroadcast
             ]),
             'notification_type' => 'IncidentCreated',
             'target_type' => 'user',
-            'target_id' => $this->incident->created_by ?? 1,
+            'target_id' => $this->incident->reported_by ?? 1,
             'channel' => 'web',
             'status' => 'sent',
             'sent_at' => now(),
@@ -50,7 +50,7 @@ class IncidentCreated implements ShouldBroadcast
     {
         // Gửi notification cho high/critical incidents
         $highSeverity = ['high', 'critical'];
-        
+
         if (in_array($this->incident->severity, $highSeverity)) {
             SendPushNotificationJob::dispatch('incident', [
                 'incident_id' => $this->incident->id,

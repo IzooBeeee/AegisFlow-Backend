@@ -2,8 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -60,8 +61,8 @@ return new class extends Migration
             try {
                 DB::statement('ALTER TABLE flood_reports ADD COLUMN IF NOT EXISTS geometry geometry(POINT, 4326)');
                 DB::statement('CREATE INDEX idx_flood_reports_geometry ON flood_reports USING GIST (geometry)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for flood_reports: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for flood_reports: '.$e->getMessage());
             }
         }
     }

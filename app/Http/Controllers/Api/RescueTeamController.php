@@ -85,6 +85,23 @@ class RescueTeamController extends Controller
     }
 
     /**
+     * Đội của người dùng hiện tại
+     * GET /api/rescue-teams/my
+     */
+    public function myTeam(Request $request)
+    {
+        $member = \App\Models\RescueMember::with('team.district')
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$member || !$member->team) {
+            return ApiResponse::error('Bạn chưa thuộc đội cứu hộ nào', 404);
+        }
+
+        return ApiResponse::success($this->formatTeam($member->team));
+    }
+
+    /**
      * Format team response
      */
     protected function formatTeam(RescueTeam $team, bool $detailed = false): array

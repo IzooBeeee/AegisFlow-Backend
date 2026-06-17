@@ -102,10 +102,11 @@ class ShelterController extends Controller
 
         try {
             \DB::statement(
-                        'UPDATE shelters SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
-                        [(float) $data['longitude'], (float) $data['latitude'], $shelter->id]
-                    );
-        } catch (\Exception $e) {}
+                'UPDATE shelters SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?',
+                [(float) $data['longitude'], (float) $data['latitude'], $shelter->id]
+            );
+        } catch (\Exception $e) {
+        }
 
         return ApiResponse::created($this->formatShelter($shelter->fresh()), 'Đã tạo điểm sơ tán');
     }

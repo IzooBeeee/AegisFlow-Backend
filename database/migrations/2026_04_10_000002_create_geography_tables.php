@@ -2,8 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -42,8 +43,8 @@ return new class extends Migration
                 DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
                 DB::statement('ALTER TABLE districts ADD COLUMN IF NOT EXISTS boundary geometry(POLYGON, 4326)');
                 DB::statement('ALTER TABLE wards ADD COLUMN IF NOT EXISTS boundary geometry(POLYGON, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS not available, skipping geometry columns: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS not available, skipping geometry columns: '.$e->getMessage());
             }
         }
     }
@@ -58,6 +59,7 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             DB::statement('DROP TABLE IF EXISTS wards CASCADE');
             DB::statement('DROP TABLE IF EXISTS districts CASCADE');
+
             return;
         }
 

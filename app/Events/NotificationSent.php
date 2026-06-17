@@ -22,7 +22,7 @@ class NotificationSent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("user.{$this->userId}")
+            new PrivateChannel("user.{$this->userId}"),
         ];
     }
 

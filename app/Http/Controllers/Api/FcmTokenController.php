@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Models\UserDevice;
+use App\Services\FcmPushService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * FcmTokenController — Quản lý FCM tokens của người dùng
@@ -116,7 +116,7 @@ class FcmTokenController extends Controller
         $devices = UserDevice::where('user_id', $user->id)
             ->orderBy('last_used_at', 'desc')
             ->get()
-            ->map(fn($device) => $this->formatDevice($device));
+            ->map(fn ($device) => $this->formatDevice($device));
 
         return ApiResponse::success([
             'devices' => $devices,
@@ -176,7 +176,7 @@ class FcmTokenController extends Controller
             );
         }
 
-        $device->update(array_filter($data, fn($v) => $v !== null));
+        $device->update(array_filter($data, fn ($v) => $v !== null));
 
         return ApiResponse::success([
             'device' => $this->formatDevice($device->fresh()),
@@ -272,7 +272,7 @@ class FcmTokenController extends Controller
         }
 
         // Subscribe via FCM
-        $fcm = app(\App\Services\FcmPushService::class);
+        $fcm = app(FcmPushService::class);
         $success = $fcm->subscribeToTopic($tokens, $data['topic']);
 
         if ($success) {
@@ -303,7 +303,7 @@ class FcmTokenController extends Controller
             return ApiResponse::success(null, 'Không có thiết bị nào để hủy đăng ký');
         }
 
-        $fcm = app(\App\Services\FcmPushService::class);
+        $fcm = app(FcmPushService::class);
         $success = $fcm->unsubscribeFromTopic($tokens, $data['topic']);
 
         if ($success) {

@@ -67,7 +67,7 @@ class IncidentResource extends JsonResource
      */
     protected function getCoordinates(): ?array
     {
-        if (!$this->geometry) {
+        if (! $this->geometry) {
             return null;
         }
 

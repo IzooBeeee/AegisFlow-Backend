@@ -2,16 +2,16 @@
 
 namespace Database\Factories;
 
-use App\Enums\SeverityEnum;
-use App\Enums\IncidentTypeEnum;
-use App\Enums\IncidentStatusEnum;
 use App\Enums\IncidentSourceEnum;
+use App\Enums\IncidentStatusEnum;
+use App\Enums\IncidentTypeEnum;
+use App\Enums\SeverityEnum;
 use App\Models\Incident;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Incident>
+ * @extends Factory<Incident>
  */
 class IncidentFactory extends Factory
 {

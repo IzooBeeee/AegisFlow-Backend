@@ -28,8 +28,7 @@ class AIServiceClient
         float $history = 0.0,
         ?string $predictionTime = null,
         bool $seasonalityEnabled = true
-    ): ?array
-    {
+    ): ?array {
         try {
             $response = Http::timeout($this->timeout)
                 ->post("{$this->baseUrl}/api/predict-risk", [

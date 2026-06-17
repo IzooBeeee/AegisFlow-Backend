@@ -106,11 +106,12 @@ class FloodZoneController extends Controller
         // Lưu geometry PostGIS
         if (! empty($data['geometry']) && DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE flood_zones SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
-                            [$data['geometry'], $zone->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE flood_zones SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
+                    [$data['geometry'], $zone->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         return ApiResponse::created(new FloodZoneResource($zone->fresh()));
@@ -148,11 +149,12 @@ class FloodZoneController extends Controller
 
         if (! empty($data['geometry']) && DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE flood_zones SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
-                            [$data['geometry'], $zone->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE flood_zones SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
+                    [$data['geometry'], $zone->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         return ApiResponse::success(new FloodZoneResource($zone->fresh()), 'Cập nhật thành công');

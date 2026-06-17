@@ -15,6 +15,7 @@ class LocationSeeder extends Seeder
     {
         if (! $this->hasPostGIS()) {
             $this->command->warn('⚠️  PostGIS not available, skipping LocationSeeder geometry updates');
+
             return;
         }
 
@@ -82,7 +83,7 @@ class LocationSeeder extends Seeder
             DB::table('rescue_teams')
                 ->where('code', $t['code'])
                 ->update([
-                    'current_latitude'  => $t['lat'],
+                    'current_latitude' => $t['lat'],
                     'current_longitude' => $t['lng'],
                     'last_location_update' => now(),
                 ]);
@@ -103,7 +104,7 @@ class LocationSeeder extends Seeder
         ];
 
         $alerts = DB::table('alerts')
-            ->whereRaw("geometry IS NULL OR ST_IsEmpty(geometry)")
+            ->whereRaw('geometry IS NULL OR ST_IsEmpty(geometry)')
             ->orderBy('id')
             ->pluck('id');
 
@@ -118,13 +119,14 @@ class LocationSeeder extends Seeder
                     'geometry' => DB::raw("ST_SetSRID(ST_MakePoint({$lng}, {$lat}), 4326)"),
                 ]);
         }
-        $this->command->info('✅ Alerts locations updated (' . count($alerts) . ' alerts)');
+        $this->command->info('✅ Alerts locations updated ('.count($alerts).' alerts)');
     }
 
     private function hasPostGIS(): bool
     {
         try {
             $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+
             return count($result) > 0;
         } catch (\Exception $e) {
             return false;

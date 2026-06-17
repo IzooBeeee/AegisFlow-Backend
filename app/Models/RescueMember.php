@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
@@ -17,7 +16,9 @@ class RescueMember extends Pivot
     protected $table = 'rescue_members';
 
     public $timestamps = true;
+
     const UPDATED_AT = 'updated_at';
+
     const CREATED_AT = 'created_at';
 
     protected $fillable = [

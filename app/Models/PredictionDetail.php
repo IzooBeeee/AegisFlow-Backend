@@ -15,6 +15,7 @@ class PredictionDetail extends Model
 
     // No timestamps — only created_at for partition
     public const CREATED_AT = 'created_at';
+
     public const UPDATED_AT = null;
 
     protected $table = 'prediction_details';

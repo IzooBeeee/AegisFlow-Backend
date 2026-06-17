@@ -50,11 +50,11 @@ class FloodWarningNotification extends Notification
                 'risk_score' => (string) number_format($this->riskScore, 2),
                 'latitude' => (string) ($this->floodZone->latitude ?? ''),
                 'longitude' => (string) ($this->floodZone->longitude ?? ''),
-                'water_level_current' => $this->prediction->predicted_water_level 
-                    ? (string) $this->prediction->predicted_water_level 
+                'water_level_current' => $this->prediction->predicted_water_level
+                    ? (string) $this->prediction->predicted_water_level
                     : '',
-                'water_level_prediction' => $this->prediction->predicted_water_level 
-                    ? (string) $this->prediction->predicted_water_level 
+                'water_level_prediction' => $this->prediction->predicted_water_level
+                    ? (string) $this->prediction->predicted_water_level
                     : '',
                 'expected_time' => $this->prediction->prediction_time?->toIso8601String() ?? '',
                 'affected_wards' => json_encode($this->floodZone->affected_wards ?? []),
@@ -92,8 +92,8 @@ class FloodWarningNotification extends Notification
     {
         $riskLabel = $this->getRiskLabel();
         $zoneName = $this->floodZone->name ?? 'khu vực';
-        $waterLevel = $this->prediction->predicted_water_level 
-            ? number_format($this->prediction->predicted_water_level, 1) . 'm' 
+        $waterLevel = $this->prediction->predicted_water_level
+            ? number_format($this->prediction->predicted_water_level, 1).'m'
             : 'mực nước dự báo không xác định';
 
         return match ($this->riskLevel) {

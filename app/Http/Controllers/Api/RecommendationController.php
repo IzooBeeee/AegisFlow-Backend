@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-
-use App\Helpers\ApiResponse;
-use App\Models\Recommendation;
-use App\Models\Alert;
-use App\Models\RescueRequest;
-use App\Enums\AlertTypeEnum;
 use App\Enums\AlertStatusEnum;
-use App\Events\NotificationSent;
+use App\Enums\AlertTypeEnum;
 use App\Events\AlertCreated;
+use App\Events\NotificationSent;
+use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
+use App\Models\Alert;
+use App\Models\Recommendation;
+use App\Models\RescueRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class RecommendationController extends Controller
@@ -71,7 +72,7 @@ class RecommendationController extends Controller
         }
 
         $item->update([
-            'status'      => 'approved',
+            'status' => 'approved',
             'approved_by' => $request->user()->id,
             'approved_at' => now(),
         ]);
@@ -116,18 +117,18 @@ class RecommendationController extends Controller
     protected function executeAlertAction(Recommendation $item, $approver, array $details, array $districtIds, array $floodZoneIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] ' . ($details['title'] ?? 'Cảnh báo ngập lụt'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::FLOOD_WARNING->value,
-            'severity'               => $details['severity'] ?? 'high',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => $floodZoneIds,
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] '.($details['title'] ?? 'Cảnh báo ngập lụt'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::FLOOD_WARNING->value,
+            'severity' => $details['severity'] ?? 'high',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => $floodZoneIds,
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -137,18 +138,18 @@ class RecommendationController extends Controller
     protected function executeEvacuationAction(Recommendation $item, $approver, array $details, array $districtIds, array $floodZoneIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] Lệnh sơ tán: ' . ($details['target_zone'] ?? 'Khu vực nguy hiểm'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::EVACUATION->value,
-            'severity'               => 'critical',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => $floodZoneIds,
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] Lệnh sơ tán: '.($details['target_zone'] ?? 'Khu vực nguy hiểm'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::EVACUATION->value,
+            'severity' => 'critical',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => $floodZoneIds,
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -157,28 +158,28 @@ class RecommendationController extends Controller
 
     protected function executeRescueDispatchAction(Recommendation $item, $approver, array $details, $floodZone, $district): array
     {
-        $requestNumber = 'AI-' . strtoupper(Str::random(6));
+        $requestNumber = 'AI-'.strtoupper(Str::random(6));
         $urgency = $details['urgency'] ?? 'high';
 
         $rescueRequest = RescueRequest::create([
-            'request_number'    => $requestNumber,
-            'caller_name'       => 'Hệ thống AI AegisFlow',
-            'caller_phone'      => '0000000000',
-            'address'           => $details['target_zone'] ?? ($floodZone?->name ?? 'Khu vực AI xác định'),
-            'district_id'       => $district?->id,
-            'incident_id'       => $item->incident_id,
-            'urgency'           => $urgency,
-            'category'          => 'rescue',
-            'people_count'      => (int) ($details['people_count'] ?? 0),
+            'request_number' => $requestNumber,
+            'caller_name' => 'Hệ thống AI AegisFlow',
+            'caller_phone' => '0000000000',
+            'address' => $details['target_zone'] ?? ($floodZone?->name ?? 'Khu vực AI xác định'),
+            'district_id' => $district?->id,
+            'incident_id' => $item->incident_id,
+            'urgency' => $urgency,
+            'category' => 'rescue',
+            'people_count' => (int) ($details['people_count'] ?? 0),
             'vulnerable_groups' => [],
-            'description'       => $item->description,
-            'water_level_m'     => $details['current_level_m'] ?? $details['water_level_m'] ?? null,
-            'status'            => 'pending',
-            'priority_score'    => match ($urgency) {
+            'description' => $item->description,
+            'water_level_m' => $details['current_level_m'] ?? $details['water_level_m'] ?? null,
+            'status' => 'pending',
+            'priority_score' => match ($urgency) {
                 'critical' => 90,
-                'high'     => 70,
-                'medium'   => 50,
-                default    => 30,
+                'high' => 70,
+                'medium' => 50,
+                default => 30,
             },
         ]);
 
@@ -188,18 +189,18 @@ class RecommendationController extends Controller
     protected function executeRerouteAction(Recommendation $item, $approver, array $details, array $districtIds, array $floodZoneIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] Cảnh báo đổi tuyến: ' . ($details['target_zone'] ?? 'Tuyến đường bị ảnh hưởng'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::FLOOD_WARNING->value,
-            'severity'               => 'medium',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => $floodZoneIds,
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] Cảnh báo đổi tuyến: '.($details['target_zone'] ?? 'Tuyến đường bị ảnh hưởng'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::FLOOD_WARNING->value,
+            'severity' => 'medium',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => $floodZoneIds,
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -209,18 +210,18 @@ class RecommendationController extends Controller
     protected function executePriorityRouteAction(Recommendation $item, $approver, array $details, array $districtIds, array $floodZoneIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] Kích hoạt tuyến ưu tiên: ' . ($details['target_zone'] ?? 'Vùng leo thang rủi ro'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::EVACUATION->value,
-            'severity'               => 'high',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => $floodZoneIds,
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] Kích hoạt tuyến ưu tiên: '.($details['target_zone'] ?? 'Vùng leo thang rủi ro'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::EVACUATION->value,
+            'severity' => 'high',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => $floodZoneIds,
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -230,18 +231,18 @@ class RecommendationController extends Controller
     protected function executeSupplyDispatchAction(Recommendation $item, $approver, array $details, array $districtIds, array $floodZoneIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] Điều vật tư cứu trợ: ' . ($details['target_zone'] ?? 'Khu vực cần hỗ trợ'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::FLOOD_WARNING->value,
-            'severity'               => 'medium',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => $floodZoneIds,
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] Điều vật tư cứu trợ: '.($details['target_zone'] ?? 'Khu vực cần hỗ trợ'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::FLOOD_WARNING->value,
+            'severity' => 'medium',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => $floodZoneIds,
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -251,18 +252,18 @@ class RecommendationController extends Controller
     protected function executeSignalControlAction(Recommendation $item, $approver, array $details, array $districtIds): array
     {
         $alert = Alert::create([
-            'title'                  => '[AI] Điều chỉnh tín hiệu giao thông: ' . ($details['target_zone'] ?? 'Khu vực ngập'),
-            'description'            => $item->description,
-            'alert_type'             => AlertTypeEnum::FLOOD_WARNING->value,
-            'severity'               => 'medium',
-            'status'                 => AlertStatusEnum::ACTIVE->value,
-            'affected_districts'     => $districtIds,
-            'affected_wards'         => [],
-            'affected_flood_zones'   => [],
-            'source'                 => 'ai',
-            'issued_by'              => $approver->id,
-            'related_incident_id'    => $item->incident_id,
-            'related_prediction_id'  => $item->prediction_id,
+            'title' => '[AI] Điều chỉnh tín hiệu giao thông: '.($details['target_zone'] ?? 'Khu vực ngập'),
+            'description' => $item->description,
+            'alert_type' => AlertTypeEnum::FLOOD_WARNING->value,
+            'severity' => 'medium',
+            'status' => AlertStatusEnum::ACTIVE->value,
+            'affected_districts' => $districtIds,
+            'affected_wards' => [],
+            'affected_flood_zones' => [],
+            'source' => 'ai',
+            'issued_by' => $approver->id,
+            'related_incident_id' => $item->incident_id,
+            'related_prediction_id' => $item->prediction_id,
         ]);
         event(new AlertCreated($alert));
 
@@ -276,43 +277,43 @@ class RecommendationController extends Controller
     {
         $title = match ($item->type) {
             'rescue_dispatch' => '[AI] Đã điều cứu hộ khẩn cấp',
-            'evacuation'      => '[AI] Đã ban lệnh sơ tán',
-            'alert'           => '[AI] Đã phát cảnh báo mới',
-            'reroute'         => '[AI] Đã kích hoạt đổi tuyến',
-            'priority_route'  => '[AI] Đã kích hoạt tuyến ưu tiên',
+            'evacuation' => '[AI] Đã ban lệnh sơ tán',
+            'alert' => '[AI] Đã phát cảnh báo mới',
+            'reroute' => '[AI] Đã kích hoạt đổi tuyến',
+            'priority_route' => '[AI] Đã kích hoạt tuyến ưu tiên',
             'supply_dispatch' => '[AI] Đã điều vật tư cứu trợ',
-            'signal_control'  => '[AI] Đã điều chỉnh tín hiệu',
-            default           => '[AI] Đề xuất đã được phê duyệt',
+            'signal_control' => '[AI] Đã điều chỉnh tín hiệu',
+            default => '[AI] Đề xuất đã được phê duyệt',
         };
         $body = $item->description;
 
-        $users = \App\Models\User::all();
+        $users = User::all();
         foreach ($users as $u) {
             $notifId = DB::table('notifications')->insertGetId([
-                'title'             => $title,
-                'body'              => $body,
-                'data'              => json_encode(array_merge(
+                'title' => $title,
+                'body' => $body,
+                'data' => json_encode(array_merge(
                     ['id' => $item->id, 'type' => $item->type, 'incident_id' => $item->incident_id],
                     $actionResult
                 )),
                 'notification_type' => 'RecommendationApproved',
-                'target_type'       => 'user',
-                'target_id'         => $u->id,
-                'channel'           => 'all',
-                'status'            => 'sent',
-                'sent_at'           => now(),
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'target_type' => 'user',
+                'target_id' => $u->id,
+                'channel' => 'all',
+                'status' => 'sent',
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
             event(new NotificationSent($u->id, [
-                'id'         => $notifId,
-                'type'       => 'report_status',
-                'title'      => $title,
-                'message'    => $body,
-                'noi_dung'   => $body,
-                'tieu_de'    => $title,
-                'data'       => array_merge(
+                'id' => $notifId,
+                'type' => 'report_status',
+                'title' => $title,
+                'message' => $body,
+                'noi_dung' => $body,
+                'tieu_de' => $title,
+                'data' => array_merge(
                     ['id' => $item->id, 'type' => $item->type, 'incident_id' => $item->incident_id],
                     $actionResult
                 ),
@@ -364,21 +365,21 @@ class RecommendationController extends Controller
 
         $payload = [
             'recommendation_type' => $item->type,
-            'description'         => $item->description,
-            'details'             => $item->details ?? [],
-            'prediction'          => $item->prediction ? [
-                'risk_score'       => $item->prediction->risk_score ?? ($item->prediction->probability * 100),
-                'risk_level'       => $item->prediction->severity,
-                'probability'      => $item->prediction->probability,
-                'horizon_minutes'  => $item->prediction->horizon_minutes,
+            'description' => $item->description,
+            'details' => $item->details ?? [],
+            'prediction' => $item->prediction ? [
+                'risk_score' => $item->prediction->risk_score ?? ($item->prediction->probability * 100),
+                'risk_level' => $item->prediction->severity,
+                'probability' => $item->prediction->probability,
+                'horizon_minutes' => $item->prediction->horizon_minutes,
             ] : [],
-            'zone_name'           => $floodZone?->name,
-            'district_name'       => $district?->name,
+            'zone_name' => $floodZone?->name,
+            'district_name' => $district?->name,
         ];
 
         try {
             $aiServiceUrl = config('services.ai.url', env('AI_SERVICE_URL', 'http://localhost:5005'));
-            $response = \Illuminate\Support\Facades\Http::timeout(10)
+            $response = Http::timeout(10)
                 ->post("{$aiServiceUrl}/api/recommendations/analyze", $payload);
 
             if ($response->successful()) {
@@ -390,17 +391,17 @@ class RecommendationController extends Controller
 
         // Fallback: phân tích cơ bản tại backend
         return ApiResponse::success([
-            'recommendation_type'          => $item->type,
-            'urgency'                      => $item->details['urgency'] ?? 'medium',
-            'urgency_score'                => 50,
-            'estimated_impact'             => $item->description,
+            'recommendation_type' => $item->type,
+            'urgency' => $item->details['urgency'] ?? 'medium',
+            'urgency_score' => 50,
+            'estimated_impact' => $item->description,
             'affected_population_estimate' => null,
-            'time_sensitivity_minutes'     => 60,
-            'suggested_actions'            => ['Xem xét và thực hiện theo đề xuất'],
-            'risk_factors'                 => ['Dựa trên đánh giá AI'],
-            'required_resources'           => [],
-            'confidence'                   => 0.6,
-            'reasoning'                    => 'Phân tích từ backend (AI service không khả dụng)',
+            'time_sensitivity_minutes' => 60,
+            'suggested_actions' => ['Xem xét và thực hiện theo đề xuất'],
+            'risk_factors' => ['Dựa trên đánh giá AI'],
+            'required_resources' => [],
+            'confidence' => 0.6,
+            'reasoning' => 'Phân tích từ backend (AI service không khả dụng)',
         ]);
     }
 
@@ -418,49 +419,49 @@ class RecommendationController extends Controller
         if (! $priority) {
             $priority = match ($r->type) {
                 'evacuation', 'rescue_dispatch', 'emergency' => 'critical',
-                'priority_route', 'alert'                    => 'high',
-                'reroute', 'supply_dispatch'                 => 'medium',
-                default                                      => 'medium',
+                'priority_route', 'alert' => 'high',
+                'reroute', 'supply_dispatch' => 'medium',
+                default => 'medium',
             };
         }
 
         // Khu vực: details.target_zone → floodZone.name → prediction.target_area → district.name
         $floodZone = $r->prediction?->floodZone;
-        $district  = $floodZone?->district;
+        $district = $floodZone?->district;
         $targetArea = $details['target_zone']
             ?? $floodZone?->name
             ?? $r->prediction?->target_area
-            ?? ($district ? $district->name . ', Đà Nẵng' : null);
+            ?? ($district ? $district->name.', Đà Nẵng' : null);
 
         $data = [
-            'id'          => $r->id,
-            'type'        => $r->type,
-            'type_label'  => $r->translated('type'),
+            'id' => $r->id,
+            'type' => $r->type,
+            'type_label' => $r->translated('type'),
             'description' => $r->description,
-            'details'     => $details,
-            'confidence'  => $confidence !== null ? (float) $confidence : null,
-            'priority'    => $priority,
+            'details' => $details,
+            'confidence' => $confidence !== null ? (float) $confidence : null,
+            'priority' => $priority,
             'target_area' => $targetArea,
-            'flood_zone'  => $floodZone ? [
-                'id'   => $floodZone->id,
+            'flood_zone' => $floodZone ? [
+                'id' => $floodZone->id,
                 'name' => $floodZone->name,
             ] : null,
-            'district'    => $district ? [
-                'id'   => $district->id,
+            'district' => $district ? [
+                'id' => $district->id,
                 'name' => $district->name,
             ] : null,
-            'status'      => $r->status,
+            'status' => $r->status,
             'status_label' => $r->translated('status'),
-            'prediction'  => $r->prediction ? [
-                'id'              => $r->prediction->id,
-                'severity'        => $r->prediction->severity,
-                'probability'     => $r->prediction->probability,
+            'prediction' => $r->prediction ? [
+                'id' => $r->prediction->id,
+                'severity' => $r->prediction->severity,
+                'probability' => $r->prediction->probability,
                 'predicted_value' => $r->prediction->predicted_value,
                 'horizon_minutes' => $r->prediction->horizon_minutes,
-                'prediction_for'  => $r->prediction->prediction_for?->toIso8601String(),
+                'prediction_for' => $r->prediction->prediction_for?->toIso8601String(),
             ] : null,
-            'incident'    => $r->incident ? ['id' => $r->incident->id, 'title' => $r->incident->title] : null,
-            'created_at'  => $r->created_at?->toIso8601String(),
+            'incident' => $r->incident ? ['id' => $r->incident->id, 'title' => $r->incident->title] : null,
+            'created_at' => $r->created_at?->toIso8601String(),
         ];
 
         if ($detailed) {

@@ -96,7 +96,7 @@ class Shelter extends Model
     public function getLocationAttribute(): ?array
     {
         try {
-            $result = \Illuminate\Support\Facades\DB::selectOne('
+            $result = DB::selectOne('
             SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
             FROM shelters WHERE id = ?
         ', [$this->id]);

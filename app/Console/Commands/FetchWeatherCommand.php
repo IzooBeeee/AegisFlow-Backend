@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class FetchWeatherCommand extends Command
 {
     protected $signature = 'weather:fetch {--sync : Chạy đồng bộ thay vì queue}';
+
     protected $description = 'Fetch dữ liệu thời tiết từ OpenWeatherMap cho tất cả quận Đà Nẵng';
 
     public function handle(OpenWeatherService $weather): void

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class OpenWeatherService
 {
     private string $apiKey;
+
     private string $baseUrl = 'https://api.openweathermap.org/data/2.5';
 
     // Tọa độ trung tâm các quận Đà Nẵng
@@ -33,33 +34,35 @@ class OpenWeatherService
     {
         try {
             $response = Http::timeout(10)->get("{$this->baseUrl}/weather", [
-                'lat'   => $lat,
-                'lon'   => $lon,
+                'lat' => $lat,
+                'lon' => $lon,
                 'appid' => $this->apiKey,
                 'units' => 'metric',
-                'lang'  => 'vi',
+                'lang' => 'vi',
             ]);
 
             if ($response->failed()) {
                 Log::warning('[OpenWeather] API failed', ['status' => $response->status()]);
+
                 return null;
             }
 
             $data = $response->json();
 
             return [
-                'temperature_c'  => $data['main']['temp'] ?? null,
-                'humidity_pct'   => $data['main']['humidity'] ?? null,
+                'temperature_c' => $data['main']['temp'] ?? null,
+                'humidity_pct' => $data['main']['humidity'] ?? null,
                 'wind_speed_kmh' => isset($data['wind']['speed']) ? round($data['wind']['speed'] * 3.6, 1) : null,
                 'wind_direction' => $data['wind']['deg'] ?? null,
-                'rainfall_mm'    => $data['rain']['1h'] ?? $data['rain']['3h'] ?? 0,
-                'pressure_hpa'   => $data['main']['pressure'] ?? null,
-                'cloud_cover_pct'=> $data['clouds']['all'] ?? null,
-                'description'    => $data['weather'][0]['description'] ?? null,
-                'recorded_at'    => now(),
+                'rainfall_mm' => $data['rain']['1h'] ?? $data['rain']['3h'] ?? 0,
+                'pressure_hpa' => $data['main']['pressure'] ?? null,
+                'cloud_cover_pct' => $data['clouds']['all'] ?? null,
+                'description' => $data['weather'][0]['description'] ?? null,
+                'recorded_at' => now(),
             ];
         } catch (\Exception $e) {
-            Log::error('[OpenWeather] Exception: ' . $e->getMessage());
+            Log::error('[OpenWeather] Exception: '.$e->getMessage());
+
             return null;
         }
     }

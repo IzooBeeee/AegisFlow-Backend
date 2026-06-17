@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Http\Controllers\Controller;
-
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Models\RescueRequest;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Models\Activity;
 
 class SystemController extends Controller
 {
@@ -71,7 +71,7 @@ class SystemController extends Controller
      */
     public function logs(Request $request)
     {
-        $query = \Spatie\Activitylog\Models\Activity::with('causer')
+        $query = Activity::with('causer')
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('causer_id')) {

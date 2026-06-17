@@ -84,10 +84,10 @@ class EvacuationRouteController extends Controller
 
         if ($startLoc && $endLoc) {
             $aiResult = $aiService->optimizeRoute(
-                (float)$startLoc['lat'], 
-                (float)$startLoc['lng'], 
-                (float)$endLoc['lat'], 
-                (float)$endLoc['lng']
+                (float) $startLoc['lat'],
+                (float) $startLoc['lng'],
+                (float) $endLoc['lat'],
+                (float) $endLoc['lng']
             );
 
             if ($aiResult) {

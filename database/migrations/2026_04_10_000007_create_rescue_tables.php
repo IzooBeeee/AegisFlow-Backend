@@ -2,8 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -37,8 +38,8 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
                 DB::statement('ALTER TABLE rescue_teams ADD COLUMN IF NOT EXISTS current_location geometry(POINT, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for rescue_teams: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for rescue_teams: '.$e->getMessage());
             }
         }
 
@@ -86,8 +87,8 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
                 DB::statement('ALTER TABLE shelters ADD COLUMN IF NOT EXISTS geometry geometry(POINT, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for shelters: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for shelters: '.$e->getMessage());
             }
         }
 
@@ -131,8 +132,8 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
                 DB::statement('ALTER TABLE rescue_requests ADD COLUMN IF NOT EXISTS geometry geometry(POINT, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for rescue_requests: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for rescue_requests: '.$e->getMessage());
             }
         }
 

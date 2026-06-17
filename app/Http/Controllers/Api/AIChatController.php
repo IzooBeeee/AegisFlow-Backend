@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class AIChatController extends Controller
 {
     protected string $groqUrl;
+
     protected string $model;
+
     protected int $timeout;
 
     public function __construct()
@@ -53,21 +55,22 @@ class AIChatController extends Controller
 
             $response = Http::timeout($this->timeout)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Authorization' => 'Bearer '.$apiKey,
                     'Content-Type' => 'application/json',
                 ])
-                ->post($this->groqUrl . '/chat/completions', [
+                ->post($this->groqUrl.'/chat/completions', [
                     'model' => $this->model,
                     'messages' => $messages,
                     'temperature' => 0.3,
                     'max_tokens' => 500,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Groq API error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return $this->fallbackResponse($userMessage, $contextData);
             }
 
@@ -83,6 +86,7 @@ class AIChatController extends Controller
 
         } catch (\Exception $e) {
             Log::error('AI Chat error', ['error' => $e->getMessage()]);
+
             return $this->fallbackResponse($userMessage, $contextData);
         }
     }
@@ -143,7 +147,7 @@ Tech stack: Laravel (backend), Next.js (dashboard), FastAPI (AI), React Native (
 EXTRA,
         };
 
-        return $base . "\n\n" . $domain;
+        return $base."\n\n".$domain;
     }
 
     /**
@@ -155,7 +159,7 @@ EXTRA,
 
         try {
             $sensorUrl = config('services.ai.url', 'http://localhost:5005');
-            $sensorResponse = Http::timeout(5)->get($sensorUrl . '/api/sensors/recent');
+            $sensorResponse = Http::timeout(5)->get($sensorUrl.'/api/sensors/recent');
 
             if ($sensorResponse->successful()) {
                 $data['sensor_readings'] = $sensorResponse->json();
@@ -167,7 +171,7 @@ EXTRA,
 
         try {
             $predictionUrl = config('services.ai.url', 'http://localhost:5005');
-            $predResponse = Http::timeout(5)->get($predictionUrl . '/api/predictions/recent');
+            $predResponse = Http::timeout(5)->get($predictionUrl.'/api/predictions/recent');
 
             if ($predResponse->successful()) {
                 $data['recent_predictions'] = $predResponse->json();
@@ -243,7 +247,7 @@ EXTRA,
     public function status()
     {
         $apiKey = config('services.groq.api_key');
-        $hasApi = !empty($apiKey);
+        $hasApi = ! empty($apiKey);
 
         $aiOnline = false;
         $aiLatency = null;
@@ -252,8 +256,8 @@ EXTRA,
             try {
                 $start = microtime(true);
                 $response = Http::timeout(5)
-                    ->withHeaders(['Authorization' => 'Bearer ' . $apiKey])
-                    ->post($this->groqUrl . '/chat/completions', [
+                    ->withHeaders(['Authorization' => 'Bearer '.$apiKey])
+                    ->post($this->groqUrl.'/chat/completions', [
                         'model' => $this->model,
                         'messages' => [['role' => 'user', 'content' => 'ping']],
                         'max_tokens' => 5,
@@ -271,5 +275,80 @@ EXTRA,
             'ai_online' => $aiOnline,
             'latency_ms' => $aiLatency,
         ]);
+    }
+
+    /**
+     * Proxy POST /ai/analyze → AI service /api/ai/analyze
+     * Unified smart analysis: current risk + 1h/3h/6h forecast + spread
+     */
+    public function analyze(Request $request)
+    {
+        $aiUrl = config('services.ai.url', 'http://localhost:5005').'/api/ai/analyze';
+
+        try {
+            $response = Http::timeout(25)
+                ->post($aiUrl, $request->all());
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            return ApiResponse::error('AI service unavailable', $response->status());
+        } catch (\Throwable $e) {
+            Log::warning('AIChatController::analyze failed: '.$e->getMessage());
+
+            return ApiResponse::error('AI service không khả dụng. Vui lòng thử lại sau.', 503);
+        }
+    }
+
+    /**
+     * Proxy POST /ai/forecast → AI service /api/predict/forecast
+     * Multi-step flood risk forecast (1h, 3h, 6h)
+     */
+    public function forecast(Request $request)
+    {
+        $aiUrl = config('services.ai.url', 'http://localhost:5005').'/api/predict/forecast';
+
+        try {
+            $response = Http::timeout(15)
+                ->post($aiUrl, $request->all());
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            return ApiResponse::error('Forecast service unavailable', $response->status());
+        } catch (\Throwable $e) {
+            return ApiResponse::error('Forecast không khả dụng', 503);
+        }
+    }
+
+    /**
+     * Proxy GET /ai/weather → AI service /api/weather/danang
+     * Real-time Da Nang weather from Open-Meteo (cached 15 min)
+     */
+    public function weather()
+    {
+        $cacheKey = 'ai_weather_danang';
+
+        return Cache::remember($cacheKey, 900, function () {
+            $aiUrl = config('services.ai.url', 'http://localhost:5005').'/api/weather/danang';
+
+            try {
+                $response = Http::timeout(10)->get($aiUrl);
+
+                if ($response->successful()) {
+                    return response()->json($response->json());
+                }
+            } catch (\Throwable $e) {
+                Log::info('Weather proxy failed: '.$e->getMessage());
+            }
+
+            return response()->json([
+                'source' => 'unavailable',
+                'current' => ['rainfall_mm' => 0, 'wind_speed_kmh' => 0, 'pressure_hpa' => 0],
+                'hourly_forecast' => [],
+            ]);
+        });
     }
 }

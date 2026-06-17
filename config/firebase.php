@@ -2,9 +2,9 @@
 
 /**
  * Firebase Configuration
- * 
+ *
  * Cấu hình Firebase Cloud Messaging cho Laravel Backend
- * 
+ *
  * Cách cài đặt:
  * 1. Tạo project Firebase tại https://console.firebase.google.com
  * 2. Thêm Android/iOS app vào project

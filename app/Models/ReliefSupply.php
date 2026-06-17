@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * ReliefSupply — Vật tư cứu hộ
@@ -37,7 +37,7 @@ class ReliefSupply extends Model
     // Relationships
     // ============================================================
 
-    public function stocks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function stocks(): HasMany
     {
         return $this->hasMany(SupplyStock::class, 'supply_id');
     }

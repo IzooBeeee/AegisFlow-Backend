@@ -2,10 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\IncidentStatusEnum;
-use App\Enums\UrgencyEnum;
-use App\Models\Incident;
-use App\Models\RescueRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;

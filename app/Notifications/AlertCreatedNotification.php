@@ -81,8 +81,8 @@ class AlertCreatedNotification extends Notification
             return null;
         }
 
-        $geometry = is_string($this->alert->geometry) 
-            ? json_decode($this->alert->geometry, true) 
+        $geometry = is_string($this->alert->geometry)
+            ? json_decode($this->alert->geometry, true)
             : $this->alert->geometry;
 
         if (isset($geometry['coordinates'][1])) {
@@ -101,8 +101,8 @@ class AlertCreatedNotification extends Notification
             return null;
         }
 
-        $geometry = is_string($this->alert->geometry) 
-            ? json_decode($this->alert->geometry, true) 
+        $geometry = is_string($this->alert->geometry)
+            ? json_decode($this->alert->geometry, true)
             : $this->alert->geometry;
 
         if (isset($geometry['coordinates'][0])) {

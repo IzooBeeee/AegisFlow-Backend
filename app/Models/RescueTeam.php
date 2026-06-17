@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\RescueTeamStatusEnum;
-use App\Enums\RescueTeamTypeEnum;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

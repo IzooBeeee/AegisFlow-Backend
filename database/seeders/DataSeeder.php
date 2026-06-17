@@ -2,13 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Alert;
 use App\Models\AIModel;
 use App\Models\Incident;
-use App\Models\Prediction;
 use App\Models\RescueRequest;
 use App\Models\RescueTeam;
 use App\Models\Shelter;
+use Faker\Factory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +35,7 @@ class DataSeeder extends Seeder
         $this->seedAIModels();
         $this->seedIncidents();
         $this->seedRescueRequests();
+        $this->seedNotifications();
     }
 
     protected function seedShelters(): void
@@ -66,20 +66,22 @@ class DataSeeder extends Seeder
         }
 
         // Tạo thêm 40 điểm ngẫu nhiên bằng Faker
-        $faker = \Faker\Factory::create('vi_VN');
+        $faker = Factory::create('vi_VN');
         $types = ['school', 'community_center', 'stadium', 'religious', 'government'];
         $facilities_list = ['food', 'water', 'medical', 'electricity', 'toilet', 'shelter'];
-        
+
         $added = 0;
         for ($i = 15; $i <= 54; $i++) {
-            $code = 'SHELTER-' . str_pad($i, 3, '0', STR_PAD_LEFT);
-            if (Shelter::where('code', $code)->exists()) continue;
-            
+            $code = 'SHELTER-'.str_pad($i, 3, '0', STR_PAD_LEFT);
+            if (Shelter::where('code', $code)->exists()) {
+                continue;
+            }
+
             $cap = $faker->numberBetween(100, 2000);
             Shelter::create([
-                'name' => 'Điểm sơ tán ' . $faker->streetName(),
+                'name' => 'Điểm sơ tán '.$faker->streetName(),
                 'code' => $code,
-                'address' => $faker->streetAddress() . ', ' . $faker->randomElement(['Liên Chiểu', 'Cẩm Lệ', 'Hải Châu', 'Sơn Trà', 'Thanh Khê', 'Ngũ Hành Sơn', 'Hòa Vang']) . ', Đà Nẵng',
+                'address' => $faker->streetAddress().', '.$faker->randomElement(['Liên Chiểu', 'Cẩm Lệ', 'Hải Châu', 'Sơn Trà', 'Thanh Khê', 'Ngũ Hành Sơn', 'Hòa Vang']).', Đà Nẵng',
                 'shelter_type' => $faker->randomElement($types),
                 'capacity' => $cap,
                 'current_occupancy' => $faker->numberBetween(0, $cap),
@@ -91,32 +93,32 @@ class DataSeeder extends Seeder
             $added++;
         }
 
-        $this->command->info('✅ Shelters: ' . (count($shelters) + $added));
+        $this->command->info('✅ Shelters: '.(count($shelters) + $added));
     }
 
     protected function seedRescueTeams(): void
     {
         $teams = [
             ['name' => 'Đội cứu hộ PCCC Liên Chiểu', 'code' => 'RESCUE-001',
-             'team_type' => 'fire', 'district_id' => 1,
-             'specializations' => ['flood_rescue', 'first_aid', 'water_pump'],
-             'personnel_count' => 25, 'vehicle_count' => 5, 'status' => 'available'],
+                'team_type' => 'fire', 'district_id' => 1,
+                'specializations' => ['flood_rescue', 'first_aid', 'water_pump'],
+                'personnel_count' => 25, 'vehicle_count' => 5, 'status' => 'available'],
             ['name' => 'Đội cứu hộ PCCC Cẩm Lệ', 'code' => 'RESCUE-002',
-             'team_type' => 'fire', 'district_id' => 2,
-             'specializations' => ['flood_rescue', 'first_aid'],
-             'personnel_count' => 20, 'vehicle_count' => 4, 'status' => 'available'],
+                'team_type' => 'fire', 'district_id' => 2,
+                'specializations' => ['flood_rescue', 'first_aid'],
+                'personnel_count' => 20, 'vehicle_count' => 4, 'status' => 'available'],
             ['name' => 'Đội Y tế Đà Nẵng', 'code' => 'RESCUE-003',
-             'team_type' => 'medical', 'district_id' => null,
-             'specializations' => ['first_aid', 'medical_evacuation', 'triage'],
-             'personnel_count' => 30, 'vehicle_count' => 6, 'status' => 'available'],
+                'team_type' => 'medical', 'district_id' => null,
+                'specializations' => ['first_aid', 'medical_evacuation', 'triage'],
+                'personnel_count' => 30, 'vehicle_count' => 6, 'status' => 'available'],
             ['name' => 'Đội quân đội Hòa Vang', 'code' => 'RESCUE-004',
-             'team_type' => 'military', 'district_id' => 3,
-             'specializations' => ['flood_rescue', 'logistics', 'evacuation'],
-             'personnel_count' => 50, 'vehicle_count' => 10, 'status' => 'available'],
+                'team_type' => 'military', 'district_id' => 3,
+                'specializations' => ['flood_rescue', 'logistics', 'evacuation'],
+                'personnel_count' => 50, 'vehicle_count' => 10, 'status' => 'available'],
             ['name' => 'Đội tình nguyện Thanh Khê', 'code' => 'RESCUE-005',
-             'team_type' => 'volunteer', 'district_id' => 5,
-             'specializations' => ['food_distribution', 'shelter_support', 'first_aid'],
-             'personnel_count' => 40, 'vehicle_count' => 2, 'status' => 'available'],
+                'team_type' => 'volunteer', 'district_id' => 5,
+                'specializations' => ['food_distribution', 'shelter_support', 'first_aid'],
+                'personnel_count' => 40, 'vehicle_count' => 2, 'status' => 'available'],
         ];
 
         foreach ($teams as $t) {
@@ -130,25 +132,25 @@ class DataSeeder extends Seeder
     {
         $models = [
             ['name' => 'LSTM Water Level Predictor', 'slug' => 'water-level-lstm',
-             'model_type' => 'lstm', 'version' => 'v1.0', 'framework' => 'TensorFlow',
-             'output_type' => 'water_level', 'description' => 'Dự báo mực nước bằng LSTM',
-             'input_features' => ['sensor_readings_24h', 'weather_data', 'historical_flood'],
-             'is_production' => true],
+                'model_type' => 'lstm', 'version' => 'v1.0', 'framework' => 'TensorFlow',
+                'output_type' => 'water_level', 'description' => 'Dự báo mực nước bằng LSTM',
+                'input_features' => ['sensor_readings_24h', 'weather_data', 'historical_flood'],
+                'is_production' => true],
             ['name' => 'CNN Rainfall Classifier', 'slug' => 'rainfall-cnn',
-             'model_type' => 'cnn', 'version' => 'v1.2', 'framework' => 'PyTorch',
-             'output_type' => 'rainfall', 'description' => 'Phân loại cường độ mưa',
-             'input_features' => ['radar_image', 'satellite_image'],
-             'is_production' => false],
+                'model_type' => 'cnn', 'version' => 'v1.2', 'framework' => 'PyTorch',
+                'output_type' => 'rainfall', 'description' => 'Phân loại cường độ mưa',
+                'input_features' => ['radar_image', 'satellite_image'],
+                'is_production' => false],
             ['name' => 'Flood Risk Ensemble', 'slug' => 'flood-risk-ensemble',
-             'model_type' => 'ensemble', 'version' => 'v1.0', 'framework' => 'Scikit-learn',
-             'output_type' => 'flood_probability', 'description' => 'Ensemble model dự báo ngập',
-             'input_features' => ['water_level', 'rainfall', 'tide_level', 'topography'],
-             'is_production' => true],
+                'model_type' => 'ensemble', 'version' => 'v1.0', 'framework' => 'Scikit-learn',
+                'output_type' => 'flood_probability', 'description' => 'Ensemble model dự báo ngập',
+                'input_features' => ['water_level', 'rainfall', 'tide_level', 'topography'],
+                'is_production' => true],
             ['name' => 'Rule-based Alert Engine', 'slug' => 'alert-rule-engine',
-             'model_type' => 'rule', 'version' => 'v2.0', 'framework' => 'Python',
-             'output_type' => 'alert', 'description' => 'Engine sinh cảnh báo từ rules',
-             'input_features' => ['thresholds', 'sensor_data'],
-             'is_production' => true],
+                'model_type' => 'rule', 'version' => 'v2.0', 'framework' => 'Python',
+                'output_type' => 'alert', 'description' => 'Engine sinh cảnh báo từ rules',
+                'input_features' => ['thresholds', 'sensor_data'],
+                'is_production' => true],
         ];
 
         foreach ($models as $m) {
@@ -187,33 +189,37 @@ class DataSeeder extends Seeder
         foreach ($incidents as $i) {
             Incident::firstOrCreate(
                 ['title' => $i['title']],
-                array_merge($i, ['created_at' => now()->subHours(rand(1, 48))])
+                array_merge([
+                    'description' => $i['title'] . ' do mưa lớn kéo dài kéo theo tình trạng ngập cục bộ tại khu vực này. Người dân cần chú ý khi đi qua.',
+                ], $i, ['created_at' => now()->subHours(rand(1, 48))])
             );
         }
 
         // Tạo thêm 50 sự cố ngập lụt bằng Faker
-        $faker = \Faker\Factory::create('vi_VN');
+        $faker = Factory::create('vi_VN');
         $addedIncidents = 0;
         for ($i = 0; $i < 50; $i++) {
             $severity = $faker->randomElement(['low', 'medium', 'high', 'critical']);
             $wl = $faker->randomFloat(1, 0.2, 2.5);
             $coordinate = self::SAFE_INCIDENT_COORDINATES[$i % count(self::SAFE_INCIDENT_COORDINATES)];
+            $street = $faker->streetName();
             $incident = Incident::create([
-                'title' => 'Ngập đường ' . $faker->streetName(),
+                'title' => 'Ngập đường ' . $street,
                 'type' => 'flood',
                 'severity' => $severity,
                 'status' => $faker->randomElement(['reported', 'verified', 'responding', 'resolved']),
                 'source' => $faker->randomElement(['citizen', 'sensor', 'operator']),
-                'address' => $faker->streetAddress() . ', Đà Nẵng',
+                'description' => 'Mưa lớn liên tục làm hệ thống thoát nước quá tải gây ngập sâu trên tuyến đường ' . $street . '. Cần cẩn trọng khi lưu thông qua khu vực.',
+                'address' => $faker->streetAddress().', Đà Nẵng',
                 'district_id' => $faker->numberBetween(1, 7),
                 'water_level_m' => $wl,
                 'reported_by' => $faker->numberBetween(1, 5),
-                'created_at' => now()->subHours(rand(1, 72))
+                'created_at' => now()->subHours(rand(1, 72)),
             ]);
 
             if (DB::connection()->getDriverName() === 'pgsql') {
                 try {
-                    $point = 'SRID=4326;POINT(' . $coordinate['lng'] . ' ' . $coordinate['lat'] . ')';
+                    $point = 'SRID=4326;POINT('.$coordinate['lng'].' '.$coordinate['lat'].')';
                     DB::statement(
                         'UPDATE incidents SET geometry = ?::geometry WHERE id = ?',
                         [$point, $incident->id]
@@ -226,7 +232,7 @@ class DataSeeder extends Seeder
             $addedIncidents++;
         }
 
-        $this->command->info('✅ Incidents: ' . (count($incidents) + $addedIncidents));
+        $this->command->info('✅ Incidents: '.(count($incidents) + $addedIncidents));
     }
 
     protected function seedRescueRequests(): void
@@ -248,40 +254,113 @@ class DataSeeder extends Seeder
         foreach ($requests as $index => $r) {
             RescueRequest::firstOrCreate(
                 ['caller_name' => $r['caller_name'], 'address' => $r['address']],
-                array_merge($r, [
-                    'request_number' => 'REQ-' . date('Ymd') . '-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
-                    'created_at' => now()->subHours(rand(1, 12))
+                array_merge([
+                    'description' => 'Cần hỗ trợ khẩn cấp liên quan đến ' . ($r['category'] === 'medical' ? 'y tế' : ($r['category'] === 'food' ? 'nhu yếu phẩm' : 'di tản và cứu hộ')) . ' tại địa chỉ ' . $r['address'] . '. Có khoảng ' . ($r['people_count'] ?? 1) . ' người đang đợi giúp đỡ.',
+                ], $r, [
+                    'request_number' => 'REQ-'.date('Ymd').'-'.str_pad($index + 1, 4, '0', STR_PAD_LEFT),
+                    'created_at' => now()->subHours(rand(1, 12)),
                 ])
             );
         }
 
         // Tạo thêm 50 yêu cầu cứu hộ bằng Faker
-        $faker = \Faker\Factory::create('vi_VN');
+        $faker = Factory::create('vi_VN');
         $addedRequests = 0;
         $baseIndex = count($requests) + 1;
         for ($i = 0; $i < 50; $i++) {
             $vg = [];
-            if ($faker->boolean(30)) $vg[] = 'children';
-            if ($faker->boolean(30)) $vg[] = 'elderly';
-            if ($faker->boolean(10)) $vg[] = 'pregnant';
-            if ($faker->boolean(10)) $vg[] = 'disabled';
+            if ($faker->boolean(30)) {
+                $vg[] = 'children';
+            }
+            if ($faker->boolean(30)) {
+                $vg[] = 'elderly';
+            }
+            if ($faker->boolean(10)) {
+                $vg[] = 'pregnant';
+            }
+            if ($faker->boolean(10)) {
+                $vg[] = 'disabled';
+            }
+
+            $cat = $faker->randomElement(['rescue', 'food', 'medical', 'evacuation']);
+            $catLabel = $cat === 'medical' ? 'y tế' : ($cat === 'food' ? 'nhu yếu phẩm' : 'di tản và cứu hộ');
 
             RescueRequest::create([
-                'request_number' => 'REQ-' . date('Ymd') . '-' . str_pad($baseIndex + $i, 4, '0', STR_PAD_LEFT),
+                'request_number' => 'REQ-'.date('Ymd').'-'.str_pad($baseIndex + $i, 4, '0', STR_PAD_LEFT),
                 'caller_name' => $faker->name(),
                 'urgency' => $faker->randomElement(['low', 'medium', 'high', 'critical']),
-                'category' => $faker->randomElement(['rescue', 'food', 'medical', 'evacuation']),
+                'category' => $cat,
                 'people_count' => $faker->numberBetween(1, 20),
                 'vulnerable_groups' => $vg,
-                'address' => $faker->streetAddress() . ', Đà Nẵng',
+                'address' => $faker->streetAddress().', Đà Nẵng',
                 'district_id' => $faker->numberBetween(1, 7),
                 'status' => $faker->randomElement(['pending', 'assigned', 'in_progress', 'completed']),
+                'description' => 'Yêu cầu cứu trợ ' . $catLabel . ' khẩn cấp từ người dân trong khu vực ngập lụt. Cần hỗ trợ tiếp cận và đưa ra ngoài an toàn.',
                 'reported_by' => $faker->numberBetween(1, 5),
-                'created_at' => now()->subHours(rand(1, 48))
+                'created_at' => now()->subHours(rand(1, 48)),
             ]);
             $addedRequests++;
         }
 
-        $this->command->info('✅ RescueRequests: ' . (count($requests) + $addedRequests));
+        $this->command->info('✅ RescueRequests: '.(count($requests) + $addedRequests));
+    }
+
+    protected function seedNotifications(): void
+    {
+        $citizens = \App\Models\User::role('citizen')->get();
+
+        foreach ($citizens as $citizen) {
+            DB::table('notifications')->insert([
+                [
+                    'target_type' => 'user',
+                    'target_id' => $citizen->id,
+                    'notification_type' => 'flood_warning',
+                    'title' => 'Cảnh báo ngập lụt khu vực Liên Chiểu',
+                    'body' => 'Cảnh báo: Mực nước tại khu vực đường Mẹ Suốt đang tăng nhanh đạt mức báo động 2. Vui lòng di tản tài sản lên cao.',
+                    'data' => json_encode([
+                        'title' => 'Cảnh báo ngập lụt khu vực Liên Chiểu',
+                        'body' => 'Cảnh báo: Mực nước tại khu vực đường Mẹ Suốt đang tăng nhanh đạt mức báo động 2. Vui lòng di tản tài sản lên cao.',
+                        'type' => 'flood_warning',
+                        'incident_id' => 1
+                    ]),
+                    'read_at' => null,
+                    'created_at' => now()->subMinutes(15),
+                    'updated_at' => now()->subMinutes(15),
+                ],
+                [
+                    'target_type' => 'user',
+                    'target_id' => $citizen->id,
+                    'notification_type' => 'system',
+                    'title' => 'Tài khoản đã xác minh thành công',
+                    'body' => 'Chào mừng bạn đến với hệ thống AegisFlow AI. Tài khoản của bạn đã được xác minh.',
+                    'data' => json_encode([
+                        'title' => 'Tài khoản đã xác minh thành công',
+                        'body' => 'Chào mừng bạn đến với hệ thống AegisFlow AI. Tài khoản của bạn đã được xác minh.',
+                        'type' => 'system'
+                    ]),
+                    'read_at' => now()->subHours(2),
+                    'created_at' => now()->subHours(2),
+                    'updated_at' => now()->subHours(2),
+                ],
+                [
+                    'target_type' => 'user',
+                    'target_id' => $citizen->id,
+                    'notification_type' => 'rescue_status',
+                    'title' => 'Đang xử lý yêu cầu cứu trợ',
+                    'body' => 'Yêu cầu cứu trợ số REQ-20260616-0001 của bạn đã được tiếp nhận và phân phối cho Đội cứu hộ PCCC Liên Chiểu.',
+                    'data' => json_encode([
+                        'title' => 'Đang xử lý yêu cầu cứu trợ',
+                        'body' => 'Yêu cầu cứu trợ số REQ-20260616-0001 của bạn đã được tiếp nhận và phân phối cho Đội cứu hộ PCCC Liên Chiểu.',
+                        'type' => 'rescue_status',
+                        'request_id' => 1
+                    ]),
+                    'read_at' => null,
+                    'created_at' => now()->subMinutes(5),
+                    'updated_at' => now()->subMinutes(5),
+                ]
+            ]);
+        }
+
+        $this->command->info('✅ Notifications seeded');
     }
 }

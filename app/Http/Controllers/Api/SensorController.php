@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\SensorResource;
 use App\Models\Sensor;
 use App\Models\SensorReading;

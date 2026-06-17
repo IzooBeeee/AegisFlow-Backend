@@ -46,5 +46,6 @@ Broadcast::channel('operators.online', function ($user) {
             'name' => $user->name,
         ];
     }
+
     return false;
 });

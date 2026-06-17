@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Recommendation extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'prediction_id',
@@ -29,13 +29,13 @@ class Recommendation extends Model
     ];
 
     protected $casts = [
-        'details'     => 'array',
+        'details' => 'array',
         'approved_at' => 'datetime',
         'executed_at' => 'datetime',
     ];
 
     protected static array $translatedEnums = [
-        'type'   => 'enums.recommendation_type',
+        'type' => 'enums.recommendation_type',
         'status' => 'enums.recommendation_status',
     ];
 

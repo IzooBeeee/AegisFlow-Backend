@@ -20,7 +20,7 @@ class IncidentResolved implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('flood')
+            new Channel('flood'),
         ];
     }
 

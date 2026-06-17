@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration: Thêm cột last_login_ip vào bảng users
  * Generated for AegisFlow AI

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Enums\IncidentStatusEnum;
-use App\Enums\SeverityEnum;
 use App\Enums\IncidentSourceEnum;
+use App\Enums\IncidentStatusEnum;
 use App\Models\Incident;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class IncidentApiTest extends TestCase
@@ -17,6 +17,7 @@ class IncidentApiTest extends TestCase
     use RefreshDatabase;
 
     protected User $operator;
+
     protected User $citizen;
 
     protected function setUp(): void
@@ -24,12 +25,12 @@ class IncidentApiTest extends TestCase
         parent::setUp();
 
         $this->operator = User::factory()->create();
-        $this->operator->assignRole(\Spatie\Permission\Models\Role::create([
+        $this->operator->assignRole(Role::create([
             'name' => 'rescue_operator', 'display_name' => 'Điều phối viên', 'slug' => 'rescue_operator',
         ]));
 
         $this->citizen = User::factory()->create();
-        $this->citizen->assignRole(\Spatie\Permission\Models\Role::create([
+        $this->citizen->assignRole(Role::create([
             'name' => 'citizen', 'display_name' => 'Công dân', 'slug' => 'citizen',
         ]));
     }

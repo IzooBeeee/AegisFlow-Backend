@@ -8,12 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('incident_events')) {
+        if (! Schema::hasTable('incident_events')) {
             return;
         }
 
         Schema::table('incident_events', function (Blueprint $table) {
-            if (!Schema::hasColumn('incident_events', 'updated_at')) {
+            if (! Schema::hasColumn('incident_events', 'updated_at')) {
                 $table->timestamp('updated_at')->nullable()->after('created_at');
             }
         });
@@ -21,7 +21,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('incident_events')) {
+        if (! Schema::hasTable('incident_events')) {
             return;
         }
 

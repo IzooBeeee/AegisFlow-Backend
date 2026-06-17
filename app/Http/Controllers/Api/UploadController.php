@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
 {
@@ -20,7 +19,7 @@ class UploadController extends Controller
 
         foreach ($request->file('files') as $file) {
             $path = $file->store('uploads/incidents', 'public');
-            $urls[] = asset('storage/' . $path);
+            $urls[] = asset('storage/'.$path);
         }
 
         return ApiResponse::success($urls, 'Files uploaded successfully');

@@ -586,6 +586,7 @@ class DemoDataSeeder extends Seeder
     {
         try {
             $result = DB::select("SELECT 1 FROM pg_extension WHERE extname = 'postgis'");
+
             return count($result) > 0;
         } catch (\Exception $e) {
             return false;

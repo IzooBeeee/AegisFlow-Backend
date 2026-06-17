@@ -29,7 +29,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
             ['name' => 'Ngô Bảo Châu', 'email' => 'chau.nb@example.com', 'phone' => '0905222111'],
         ];
 
-        $this->command->info('Đang tạo ' . count($citizens) . ' Công dân (dữ liệu tĩnh)...');
+        $this->command->info('Đang tạo '.count($citizens).' Công dân (dữ liệu tĩnh)...');
         foreach ($citizens as $c) {
             $user = User::firstOrCreate(
                 ['email' => $c['email']],
@@ -58,7 +58,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 30,
                 'vehicle_count' => 5,
                 'email' => 'team_haichau@aegisflow.ai',
-                'phone' => '0935111222'
+                'phone' => '0935111222',
             ],
             [
                 'code' => 'RESCUE-011',
@@ -69,7 +69,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 15,
                 'vehicle_count' => 3,
                 'email' => 'team_thanhkhe@aegisflow.ai',
-                'phone' => '0935111333'
+                'phone' => '0935111333',
             ],
             [
                 'code' => 'RESCUE-012',
@@ -80,7 +80,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 100,
                 'vehicle_count' => 15,
                 'email' => 'team_qk5@aegisflow.ai',
-                'phone' => '0935111444'
+                'phone' => '0935111444',
             ],
             [
                 'code' => 'RESCUE-013',
@@ -91,7 +91,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 40,
                 'vehicle_count' => 2,
                 'email' => 'team_lienchieu@aegisflow.ai',
-                'phone' => '0935111555'
+                'phone' => '0935111555',
             ],
             [
                 'code' => 'RESCUE-014',
@@ -102,7 +102,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 20,
                 'vehicle_count' => 4,
                 'email' => 'team_nguhanhson@aegisflow.ai',
-                'phone' => '0935111666'
+                'phone' => '0935111666',
             ],
             [
                 'code' => 'RESCUE-015',
@@ -113,7 +113,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 12,
                 'vehicle_count' => 2,
                 'email' => 'team_sontra@aegisflow.ai',
-                'phone' => '0935111777'
+                'phone' => '0935111777',
             ],
             [
                 'code' => 'RESCUE-016',
@@ -124,7 +124,7 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 50,
                 'vehicle_count' => 8,
                 'email' => 'team_hoavang@aegisflow.ai',
-                'phone' => '0935111888'
+                'phone' => '0935111888',
             ],
             [
                 'code' => 'RESCUE-017',
@@ -135,11 +135,11 @@ class CitizenAndRescueTeamSeeder extends Seeder
                 'personnel_count' => 25,
                 'vehicle_count' => 4,
                 'email' => 'team_camle@aegisflow.ai',
-                'phone' => '0935111999'
-            ]
+                'phone' => '0935111999',
+            ],
         ];
 
-        $this->command->info('Đang tạo ' . count($rescueTeams) . ' Đội cứu hộ (dữ liệu tĩnh)...');
+        $this->command->info('Đang tạo '.count($rescueTeams).' Đội cứu hộ (dữ liệu tĩnh)...');
         foreach ($rescueTeams as $t) {
             RescueTeam::firstOrCreate(
                 ['code' => $t['code']],

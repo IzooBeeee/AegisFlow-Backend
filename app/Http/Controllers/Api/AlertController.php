@@ -125,11 +125,12 @@ class AlertController extends Controller
         // Lưu geometry PostGIS
         if (! empty($data['geometry']) && DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE alerts SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
-                            [$data['geometry'], $alert->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE alerts SET geometry = ST_GeomFromText(?, 4326) WHERE id = ?',
+                    [$data['geometry'], $alert->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         // Broadcast event
@@ -189,13 +190,13 @@ class AlertController extends Controller
             $geometry = null;
             if (DB::connection()->getDriverName() === 'pgsql') {
                 try {
-            $result = \Illuminate\Support\Facades\DB::selectOne(
-                    'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
-                    [$alert->id]
-                );
-        } catch (\Exception $e) {
-            $result = null;
-        }
+                    $result = DB::selectOne(
+                        'SELECT ST_AsGeoJSON(geometry) as geojson FROM alerts WHERE id = ?',
+                        [$alert->id]
+                    );
+                } catch (\Exception $e) {
+                    $result = null;
+                }
                 $geometry = $result?->geojson ? json_decode($result->geojson) : null;
             }
 

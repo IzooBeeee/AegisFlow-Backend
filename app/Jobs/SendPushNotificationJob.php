@@ -4,15 +4,14 @@ namespace App\Jobs;
 
 use App\Models\Alert;
 use App\Models\Incident;
-use App\Models\RescueRequest;
 use App\Models\Prediction;
+use App\Models\RescueRequest;
 use App\Services\NotificationBroadcastService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 /**
  * SendPushNotificationJob — Gửi FCM notification bất đồng bộ
@@ -22,6 +21,7 @@ class SendPushNotificationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 60;
 
     public function __construct(
@@ -52,7 +52,7 @@ class SendPushNotificationJob implements ShouldQueue
             default => 0,
         };
 
-        \Log::info("Push notification sent", [
+        \Log::info('Push notification sent', [
             'type' => $this->type,
             'recipients' => $count,
         ]);
@@ -63,7 +63,7 @@ class SendPushNotificationJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        \Log::error("Push notification failed", [
+        \Log::error('Push notification failed', [
             'type' => $this->type,
             'data' => $this->data,
             'error' => $exception->getMessage(),

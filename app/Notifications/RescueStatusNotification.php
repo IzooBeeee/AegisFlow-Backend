@@ -36,7 +36,7 @@ class RescueStatusNotification extends Notification
 
         return [
             'title' => "Cập nhật: {$statusLabel}",
-            'body' => $this->rescueRequest->description 
+            'body' => $this->rescueRequest->description
                 ? "Yêu cầu cứu hộ #{$this->rescueRequest->id}: {$this->rescueRequest->description}"
                 : "Yêu cầu cứu hộ #{$this->rescueRequest->id} đã được cập nhật sang trạng thái {$statusLabel}",
             'priority' => 'high',
@@ -62,7 +62,7 @@ class RescueStatusNotification extends Notification
     {
         return [
             'rescue_id' => $this->rescueRequest->id,
-            'title' => "Cập nhật trạng thái",
+            'title' => 'Cập nhật trạng thái',
             'description' => $this->rescueRequest->description,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,

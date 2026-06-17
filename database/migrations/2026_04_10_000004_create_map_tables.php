@@ -2,8 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -35,8 +36,8 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
                 DB::statement('ALTER TABLE map_nodes ADD COLUMN IF NOT EXISTS geometry geometry(POINT, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for map_nodes: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for map_nodes: '.$e->getMessage());
             }
         }
 
@@ -77,8 +78,8 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
                 DB::statement('ALTER TABLE map_edges ADD COLUMN IF NOT EXISTS geometry geometry(LINESTRING, 4326)');
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS unavailable for map_edges: ' . $e->getMessage());
+            } catch (Exception $e) {
+                Log::warning('[Migration] PostGIS unavailable for map_edges: '.$e->getMessage());
             }
         }
     }

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 return new class extends Migration
 {
@@ -19,8 +20,9 @@ return new class extends Migration
         try {
             // Enable PostGIS extension
             DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('[Migration] PostGIS extension not available, skipping spatial indexes: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::warning('[Migration] PostGIS extension not available, skipping spatial indexes: '.$e->getMessage());
+
             return;
         }
 
@@ -38,7 +40,7 @@ return new class extends Migration
         DB::statement('CREATE INDEX IF NOT EXISTS idx_rescue_teams_location ON rescue_teams USING GIST(current_location) WHERE current_location IS NOT NULL');
 
         // Trigger: auto-update updated_at
-        DB::statement("
+        DB::statement('
             CREATE OR REPLACE FUNCTION update_updated_at_column()
             RETURNS TRIGGER AS $$
             BEGIN
@@ -46,7 +48,7 @@ return new class extends Migration
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql
-        ");
+        ');
 
         $tables = [
             'users', 'districts', 'wards', 'flood_zones',
@@ -72,7 +74,7 @@ return new class extends Migration
         }
 
         // Trigger: auto-update centroid cho flood_zones
-        DB::statement("
+        DB::statement('
             CREATE OR REPLACE FUNCTION update_flood_zone_centroid()
             RETURNS TRIGGER AS $$
             BEGIN
@@ -80,15 +82,15 @@ return new class extends Migration
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql
-        ");
+        ');
 
         if (Schema::hasTable('flood_zones')) {
-            DB::statement("DROP TRIGGER IF EXISTS trigger_flood_zone_centroid ON flood_zones");
-            DB::statement("
+            DB::statement('DROP TRIGGER IF EXISTS trigger_flood_zone_centroid ON flood_zones');
+            DB::statement('
                 CREATE TRIGGER trigger_flood_zone_centroid
                 BEFORE INSERT OR UPDATE OF geometry ON flood_zones
                 FOR EACH ROW EXECUTE FUNCTION update_flood_zone_centroid()
-            ");
+            ');
         }
 
         // Tạo partition cho sensor_readings (tháng hiện tại + tháng tới)

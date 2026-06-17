@@ -19,16 +19,16 @@ class AppServiceProvider extends ServiceProvider
     {
         // Singletons cho Services
         $this->app->singleton(FloodAutoDetector::class, function () {
-            return new FloodAutoDetector();
+            return new FloodAutoDetector;
         });
 
         $this->app->singleton(RecommendationGenerator::class, function () {
-            return new RecommendationGenerator();
+            return new RecommendationGenerator;
         });
 
         // FCM Push Service
         $this->app->singleton(FcmPushService::class, function () {
-            return new FcmPushService();
+            return new FcmPushService;
         });
 
         // Notification Broadcast Service
@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         // API chung: tăng lên 300 req/phút cho authenticated users, 60 cho guest
         RateLimiter::for('api', function (Request $request) {
             $limit = $request->user() ? 300 : 60;
+
             return Limit::perMinute($limit)->by(
                 $request->user()?->id ?: $request->ip()
             );

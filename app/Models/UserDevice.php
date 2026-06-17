@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,9 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_active
  * @property bool $notification_enabled
  * @property array|null $notification_settings
- * @property \Carbon\Carbon $last_used_at
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $last_used_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class UserDevice extends Model
 {
@@ -115,6 +116,7 @@ class UserDevice extends Model
     {
         $this->last_used_at = now();
         $this->save();
+
         return $this;
     }
 

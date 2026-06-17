@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\RescueRequestStatusEnum;
+use App\Events\NotificationSent;
 use App\Events\RescueRequestCreated;
 use App\Events\RescueRequestUpdated;
 use App\Helpers\ApiResponse;
@@ -151,11 +152,12 @@ class RescueRequestController extends Controller
         // Lưu PostGIS geometry
         if (DB::connection()->getDriverName() === 'pgsql') {
             try {
-            DB::statement(
-                            'UPDATE rescue_requests SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                            [$data['longitude'], $data['latitude'], $req->id]
-                        );
-        } catch (\Exception $e) {}
+                DB::statement(
+                    'UPDATE rescue_requests SET geometry = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                    [$data['longitude'], $data['latitude'], $req->id]
+                );
+            } catch (\Exception $e) {
+            }
         }
 
         // Tính priority score
@@ -235,6 +237,89 @@ class RescueRequestController extends Controller
         // Broadcast event
         broadcast(new RescueRequestUpdated($req->fresh()))->toOthers();
 
+        if ($req->reported_by) {
+            $title = "Cập nhật yêu cầu cứu hộ #{$req->id}";
+            $body = "Yêu cầu cứu hộ của bạn đã được phân công cho đội: {$team->name}";
+
+            $notifId = DB::table('notifications')->insertGetId([
+                'title' => $title,
+                'body' => $body,
+                'data' => json_encode([
+                    'id' => $req->id,
+                    'type' => 'rescue_status_update',
+                    'rescue_id' => $req->id,
+                    'old_status' => 'pending',
+                    'new_status' => 'assigned',
+                ]),
+                'notification_type' => 'rescue_status_update',
+                'target_type' => 'user',
+                'target_id' => $req->reported_by,
+                'channel' => 'all',
+                'status' => 'sent',
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Broadcast event
+            event(new NotificationSent($req->reported_by, [
+                'id' => $notifId,
+                'type' => 'report_status', // matches frontend listen key
+                'title' => $title,
+                'message' => $body,
+                'noi_dung' => $body,
+                'tieu_de' => $title,
+                'data' => [
+                    'id' => $req->id,
+                    'type' => 'report_status',
+                    'rescue_id' => $req->id,
+                    'old_status' => 'pending',
+                    'new_status' => 'assigned',
+                ],
+                'created_at' => now()->toIso8601String(),
+            ]));
+        }
+
+        // Notify rescue team members
+        $teamMembers = \App\Models\RescueMember::where('team_id', $team->id)->pluck('user_id');
+        foreach ($teamMembers as $memberId) {
+            $teamTitle = "Nhiệm vụ mới được phân công";
+            $teamBody = "Đội {$team->name} được điều động đến: " . ($req->address ?? 'vị trí yêu cầu') . ". Urgency: " . strtoupper($req->urgency ?? 'high');
+
+            $teamNotifId = DB::table('notifications')->insertGetId([
+                'title' => $teamTitle,
+                'body' => $teamBody,
+                'data' => json_encode([
+                    'type' => 'rescue_dispatch',
+                    'rescue_id' => $req->id,
+                    'team_id' => $team->id,
+                    'new_status' => 'assigned',
+                ]),
+                'notification_type' => 'rescue_dispatch',
+                'target_type' => 'user',
+                'target_id' => $memberId,
+                'channel' => 'all',
+                'status' => 'sent',
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            event(new \App\Events\NotificationSent($memberId, [
+                'id' => $teamNotifId,
+                'type' => 'rescue_dispatch',
+                'title' => $teamTitle,
+                'message' => $teamBody,
+                'noi_dung' => $teamBody,
+                'tieu_de' => $teamTitle,
+                'data' => [
+                    'rescue_id' => $req->id,
+                    'team_id' => $team->id,
+                ],
+                'created_at' => now()->toIso8601String(),
+            ]));
+        }
+
         return ApiResponse::success($this->formatRequest($req->fresh()), 'Phân công thành công');
     }
 
@@ -290,6 +375,58 @@ class RescueRequestController extends Controller
 
         // Broadcast event
         broadcast(new RescueRequestUpdated($req->fresh()))->toOthers();
+
+        if ($req->reported_by) {
+            $statusLabel = match ($data['status']) {
+                'pending' => 'Đang chờ',
+                'assigned' => 'Đã tiếp nhận',
+                'in_progress' => 'Đang xử lý',
+                'completed' => 'Hoàn thành',
+                'cancelled' => 'Đã hủy',
+                default => $data['status'],
+            };
+
+            $title = "Cập nhật yêu cầu cứu hộ #{$req->id}";
+            $body = "Yêu cầu cứu hộ của bạn đã được cập nhật trạng thái: {$statusLabel}";
+
+            $notifId = DB::table('notifications')->insertGetId([
+                'title' => $title,
+                'body' => $body,
+                'data' => json_encode([
+                    'id' => $req->id,
+                    'type' => 'rescue_status_update',
+                    'rescue_id' => $req->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $data['status'],
+                ]),
+                'notification_type' => 'rescue_status_update',
+                'target_type' => 'user',
+                'target_id' => $req->reported_by,
+                'channel' => 'all',
+                'status' => 'sent',
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Broadcast event
+            event(new NotificationSent($req->reported_by, [
+                'id' => $notifId,
+                'type' => 'report_status', // matches frontend listen key
+                'title' => $title,
+                'message' => $body,
+                'noi_dung' => $body,
+                'tieu_de' => $title,
+                'data' => [
+                    'id' => $req->id,
+                    'type' => 'report_status',
+                    'rescue_id' => $req->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $data['status'],
+                ],
+                'created_at' => now()->toIso8601String(),
+            ]));
+        }
 
         return ApiResponse::success($this->formatRequest($req->fresh()), 'Cập nhật trạng thái thành công');
     }

@@ -135,7 +135,7 @@ class WeatherDataController extends Controller
             $query->where('district_id', $request->district_id);
         }
 
-        $summary = $query->selectRaw("
+        $summary = $query->selectRaw('
             district_id,
             COUNT(*) as reading_count,
             ROUND(AVG(temperature_c)::numeric, 1) as avg_temperature_c,
@@ -146,7 +146,7 @@ class WeatherDataController extends Controller
             ROUND(MAX(wind_speed_kmh)::numeric, 1) as max_wind_speed_kmh,
             MIN(recorded_at) as from_time,
             MAX(recorded_at) as to_time
-        ")
+        ')
             ->groupBy('district_id')
             ->with('district:id,name')
             ->get();

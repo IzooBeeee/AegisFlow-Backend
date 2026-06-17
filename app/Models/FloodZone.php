@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Enums\FloodZoneRiskEnum;
 use App\Enums\FloodZoneStatusEnum;
+use App\Events\FloodZoneUpdated;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +38,7 @@ use Illuminate\Support\Facades\DB;
  */
 class FloodZone extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -80,7 +82,7 @@ class FloodZone extends Model
     // Relationships
     // ============================================================
 
-    public function district(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function district(): BelongsTo
     {
         return $this->belongsTo(District::class, 'district_id');
     }
@@ -147,7 +149,7 @@ class FloodZone extends Model
         $this->save();
 
         // Broadcast event
-        broadcast(new \App\Events\FloodZoneUpdated($this->fresh()))->toOthers();
+        broadcast(new FloodZoneUpdated($this->fresh()))->toOthers();
 
         return $this;
     }
@@ -163,15 +165,15 @@ class FloodZone extends Model
 
         try {
             try {
-            $result = \Illuminate\Support\Facades\DB::selectOne("
+                $result = DB::selectOne('
                         SELECT ST_X(centroid::geometry) as lng, ST_Y(centroid::geometry) as lat
                         FROM flood_zones WHERE id = ?
-                    ", [$this->id]);
-        } catch (\Exception $e) {
-            $result = null;
-        }
-            
-                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+                    ', [$this->id]);
+            } catch (\Exception $e) {
+                $result = null;
+            }
+
+            return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
             return null;
         }
@@ -183,9 +185,9 @@ class FloodZone extends Model
     public function toGeoJson(): array
     {
         try {
-            $geometry = \Illuminate\Support\Facades\DB::selectOne("
+            $geometry = DB::selectOne('
             SELECT ST_AsGeoJSON(geometry) as geojson FROM flood_zones WHERE id = ?
-        ", [$this->id]);
+        ', [$this->id]);
         } catch (\Exception $e) {
             $geometry = null;
         }
@@ -206,7 +208,7 @@ class FloodZone extends Model
             if (isset($fallbacks[$this->slug])) {
                 $geomData = [
                     'type' => 'Polygon',
-                    'coordinates' => $fallbacks[$this->slug]
+                    'coordinates' => $fallbacks[$this->slug],
                 ];
             }
         }

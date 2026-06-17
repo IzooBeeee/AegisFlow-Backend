@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use App\Enums\MapNodeTypeEnum;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  */
 class MapNode extends Model
 {
-    use HasFactory, SoftDeletes, HasTranslatedEnums;
+    use HasFactory, HasTranslatedEnums, SoftDeletes;
 
     protected $fillable = [
         'external_id',
@@ -89,18 +89,18 @@ class MapNode extends Model
     public function getLocationAttribute(): ?array
     {
         try {
-            $result = DB::selectOne("
+            $result = DB::selectOne('
                         SELECT ST_X(geometry::geometry) as lng, ST_Y(geometry::geometry) as lat
                         FROM map_nodes WHERE id = ?
-                    ", [$this->id]);
-            
-                    return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
+                    ', [$this->id]);
+
+            return $result ? ['lat' => $result->lat, 'lng' => $result->lng] : null;
         } catch (\Exception $e) {
             return null;
         }
     }
 
-    public function getConnectedNodes(): \Illuminate\Support\Collection
+    public function getConnectedNodes(): Collection
     {
         $outgoing = $this->outgoingEdges()->pluck('target_node_id');
         $incoming = $this->incomingEdges()->pluck('source_node_id');

@@ -4,15 +4,15 @@ return [
 
     // ── Severity ──────────────────────────────────────────────
     'severity' => [
-        'low' => 'Thấp',
+        'low' => 'Bình thường',
         'medium' => 'Trung bình',
         'high' => 'Cao',
-        'critical' => 'Nguy cấp',
+        'critical' => 'Khẩn cấp',
     ],
 
     // ── Urgency ───────────────────────────────────────────────
     'urgency' => [
-        'low' => 'Thấp',
+        'low' => 'Bình thường',
         'medium' => 'Trung bình',
         'high' => 'Cao',
         'critical' => 'Khẩn cấp',

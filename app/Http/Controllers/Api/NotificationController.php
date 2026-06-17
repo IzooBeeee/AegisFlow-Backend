@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class NotificationController extends Controller
 {
@@ -75,7 +74,7 @@ class NotificationController extends Controller
     {
         $notification = DB::table('notifications')->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return ApiResponse::notFound('Không tìm thấy thông báo');
         }
 
