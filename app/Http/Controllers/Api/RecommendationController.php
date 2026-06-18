@@ -308,7 +308,7 @@ class RecommendationController extends Controller
 
             event(new NotificationSent($u->id, [
                 'id' => $notifId,
-                'type' => 'report_status',
+                'type' => 'RecommendationApproved',
                 'title' => $title,
                 'message' => $body,
                 'noi_dung' => $body,

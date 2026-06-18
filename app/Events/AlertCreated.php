@@ -24,25 +24,50 @@ class AlertCreated implements ShouldBroadcastNow
 
     protected function saveNotification(): void
     {
-        DB::table('notifications')->insert([
-            'alert_id' => $this->alert->id,
-            'title' => "Cảnh báo: {$this->alert->title}",
-            'body' => $this->alert->description ?? '',
-            'data' => json_encode([
-                'id' => $this->alert->id,
-                'title' => $this->alert->title,
-                'description' => $this->alert->description,
-                'severity' => $this->alert->severity,
-            ]),
-            'notification_type' => 'AlertCreated',
-            'target_type' => 'user',
-            'target_id' => $this->alert->issued_by,
-            'channel' => 'web',
-            'status' => 'sent',
-            'sent_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
+        // Lấy danh sách citizen trong affected_districts
+        $query = \App\Models\User::whereHas('roles', fn ($q) => $q->where('name', 'citizen'));
+
+        $affectedDistricts = $this->alert->affected_districts ?? [];
+        if (! empty($affectedDistricts)) {
+            $query->whereIn('district_id', $affectedDistricts);
+        }
+
+        $userIds = $query->pluck('id');
+
+        if ($userIds->isEmpty()) {
+            // Fallback: lưu cho tất cả citizen nếu không có district filter
+            $userIds = \App\Models\User::whereHas('roles', fn ($q) => $q->where('name', 'citizen'))
+                ->pluck('id');
+        }
+
+        $now = now();
+        $notifData = json_encode([
+            'id'          => $this->alert->id,
+            'alert_id'    => $this->alert->id,
+            'type'        => 'alert',
+            'title'       => $this->alert->title,
+            'description' => $this->alert->description,
+            'severity'    => $this->alert->severity,
         ]);
+
+        $rows = $userIds->map(fn ($userId) => [
+            'alert_id'          => $this->alert->id,
+            'title'             => "Cảnh báo: {$this->alert->title}",
+            'body'              => $this->alert->description ?? 'Có cảnh báo mới từ hệ thống AegisFlow.',
+            'data'              => $notifData,
+            'notification_type' => 'AlertCreated',
+            'target_type'       => 'user',
+            'target_id'         => $userId,
+            'channel'           => 'push',
+            'status'            => 'sent',
+            'sent_at'           => $now,
+            'created_at'        => $now,
+            'updated_at'        => $now,
+        ])->toArray();
+
+        if (! empty($rows)) {
+            DB::table('notifications')->insert($rows);
+        }
     }
 
     /**
@@ -50,14 +75,10 @@ class AlertCreated implements ShouldBroadcastNow
      */
     protected function dispatchPushNotification(): void
     {
-        // Chỉ gửi notification nếu là alert có severity cao
-        $highSeverity = ['high', 'critical'];
-
-        if (in_array($this->alert->severity, $highSeverity)) {
-            SendPushNotificationJob::dispatch('alert', [
-                'alert_id' => $this->alert->id,
-            ]);
-        }
+        // Gửi cho tất cả severity (không chỉ high/critical)
+        SendPushNotificationJob::dispatch('alert', [
+            'alert_id' => $this->alert->id,
+        ]);
     }
 
     /**

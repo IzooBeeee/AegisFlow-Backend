@@ -109,9 +109,10 @@ class NotificationBroadcastService
         $body = $alert->description ?? 'Có cảnh báo mới từ hệ thống';
 
         $data = [
-            'type' => 'alert',
-            'alert_id' => (string) $alert->id,
-            'severity' => $alert->severity,
+            'type'       => 'alert',
+            'id'         => (string) $alert->id,   // Mobile dùng 'id' để navigate
+            'alert_id'   => (string) $alert->id,
+            'severity'   => $alert->severity,
             'alert_type' => $alert->alert_type ?? 'unknown',
         ];
 
