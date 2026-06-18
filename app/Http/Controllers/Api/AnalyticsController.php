@@ -20,16 +20,29 @@ class AnalyticsController extends Controller
     {
         $districtId = $request->get('district_id');
 
-        // Counts
-        $totalIncidents = Incident::when($districtId, fn ($q) => $q->where('district_id', $districtId))->count();
-        $activeIncidents = Incident::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        $periodDays = match ($request->get('period', '7d')) {
+            '24h' => 1,
+            '30d' => 30,
+            '90d' => 90,
+            default => 7,
+        };
+        $since = now()->subDays($periodDays);
+
+        // Counts filtered by period
+        $totalIncidents = Incident::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))->count();
+        $activeIncidents = Incident::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->active()->count();
-        $criticalIncidents = Incident::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        $criticalIncidents = Incident::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->critical()->active()->count();
 
-        $pendingRequests = RescueRequest::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        $pendingRequests = RescueRequest::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->pending()->count();
-        $criticalRequests = RescueRequest::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        $criticalRequests = RescueRequest::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->critical()->pending()->count();
 
         $floodedZones = FloodZone::when($districtId, fn ($q) => $q->where('district_id', $districtId))
@@ -42,19 +55,21 @@ class AnalyticsController extends Controller
             ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->count();
 
-        // Resolution rate
-        $resolvedIncidents = Incident::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        // Resolution rate within period
+        $resolvedIncidents = Incident::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->whereIn('status', ['resolved', 'closed'])->count();
         $resolutionRate = $totalIncidents > 0 ? round(($resolvedIncidents / $totalIncidents) * 100, 1) : 0;
 
-        // Severity distribution
-        $severityDist = Incident::when($districtId, fn ($q) => $q->where('district_id', $districtId))
+        // Severity distribution within period
+        $severityDist = Incident::where('created_at', '>=', $since)
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->selectRaw('severity, COUNT(*) as count')
             ->groupBy('severity')
             ->pluck('count', 'severity');
 
-        // Recent trend (7 ngày)
-        $incidentTrend = Incident::where('created_at', '>=', now()->subDays(7))
+        // Trend within period
+        $incidentTrend = Incident::where('created_at', '>=', $since)
             ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date')
