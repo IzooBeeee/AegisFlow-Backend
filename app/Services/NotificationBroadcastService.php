@@ -119,7 +119,11 @@ class NotificationBroadcastService
         // Gửi cho users trong affected districts
         $affectedDistricts = $alert->affected_districts ?? [];
         if (! empty($affectedDistricts)) {
-            return $this->sendToDistricts($affectedDistricts, $title, $body, $data);
+            $sent = $this->sendToDistricts($affectedDistricts, $title, $body, $data);
+            if ($sent > 0) {
+                return $sent;
+            }
+            // Fallback nếu không có user nào trong district (vd: district_id chưa được set)
         }
 
         // Fallback: gửi cho tất cả citizens
