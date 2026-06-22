@@ -75,7 +75,7 @@ class AlertCreated implements ShouldBroadcastNow
      */
     protected function dispatchPushNotification(): void
     {
-        // Gửi cho tất cả severity (không chỉ high/critical)
+        // Gửi async để không block request và không làm hỏng alert khi FCM lỗi
         SendPushNotificationJob::dispatch('alert', [
             'alert_id' => $this->alert->id,
         ]);

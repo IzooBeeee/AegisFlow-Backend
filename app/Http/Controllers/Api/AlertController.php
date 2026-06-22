@@ -133,8 +133,8 @@ class AlertController extends Controller
             }
         }
 
-        // Broadcast event
-        broadcast(new AlertCreated($alert->fresh()))->toOthers();
+        // Broadcast event + FCM push
+        event(new AlertCreated($alert->fresh()));
 
         return ApiResponse::created(new AlertResource($alert->fresh()), 'Cảnh báo đã được phát');
     }
