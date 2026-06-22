@@ -123,11 +123,17 @@ class NotificationBroadcastService
             if ($sent > 0) {
                 return $sent;
             }
-            // Fallback nếu không có user nào trong district (vd: district_id chưa được set)
+            // Fallback: không có user nào trong district có FCM token → gửi cho tất cả citizens
         }
 
-        // Fallback: gửi cho tất cả citizens
-        return $this->sendToRole('citizen', $title, $body, $data);
+        // Fallback: gửi cho tất cả citizens (khi district rỗng HOẶC không khớp user nào)
+        $sent = $this->sendToRole('citizen', $title, $body, $data);
+        if ($sent > 0) {
+            return $sent;
+        }
+
+        // Final fallback: gửi cho tất cả user có FCM token (kể cả không phải citizen)
+        return $this->sendToAllUsers($title, $body, $data);
     }
 
     /**
