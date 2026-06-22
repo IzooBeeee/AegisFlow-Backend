@@ -25,7 +25,7 @@ class RescueRequestCreated implements ShouldBroadcast
      */
     protected function dispatchPushNotification(): void
     {
-        SendPushNotificationJob::dispatch('rescue', [
+        SendPushNotificationJob::dispatchSync('rescue', [
             'rescue_id' => $this->rescueRequest->id,
         ]);
     }

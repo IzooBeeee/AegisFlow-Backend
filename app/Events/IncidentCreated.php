@@ -52,7 +52,7 @@ class IncidentCreated implements ShouldBroadcast
         $highSeverity = ['high', 'critical'];
 
         if (in_array($this->incident->severity, $highSeverity)) {
-            SendPushNotificationJob::dispatch('incident', [
+            SendPushNotificationJob::dispatchSync('incident', [
                 'incident_id' => $this->incident->id,
             ]);
         }
