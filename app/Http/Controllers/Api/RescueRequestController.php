@@ -8,8 +8,11 @@ use App\Events\RescueRequestCreated;
 use App\Events\RescueRequestUpdated;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\RescueMember;
 use App\Models\RescueRequest;
 use App\Models\RescueTeam;
+use App\Models\UserDevice;
+use App\Services\FcmPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -280,44 +283,67 @@ class RescueRequestController extends Controller
             ]));
         }
 
-        // Notify rescue team members
-        $teamMembers = \App\Models\RescueMember::where('team_id', $team->id)->pluck('user_id');
-        foreach ($teamMembers as $memberId) {
-            $teamTitle = "Nhiệm vụ mới được phân công";
-            $teamBody = "Đội {$team->name} được điều động đến: " . ($req->address ?? 'vị trí yêu cầu') . ". Urgency: " . strtoupper($req->urgency ?? 'high');
+        // Notify rescue team members — WebSocket + FCM push
+        $teamMemberUserIds = RescueMember::where('team_id', $team->id)->pluck('user_id');
+        $fcm = app(FcmPushService::class);
 
+        foreach ($teamMemberUserIds as $memberId) {
+            $teamTitle = '🚨 Nhiệm vụ mới được phân công';
+            $teamBody = "Đội {$team->name} được điều động đến: " . ($req->address ?? 'vị trí yêu cầu') . '. Mức độ: ' . strtoupper($req->urgency ?? 'high');
+
+            // ── Lưu notification vào DB ──────────────────────────────────────
             $teamNotifId = DB::table('notifications')->insertGetId([
-                'title' => $teamTitle,
-                'body' => $teamBody,
-                'data' => json_encode([
-                    'type' => 'rescue_dispatch',
-                    'rescue_id' => $req->id,
-                    'team_id' => $team->id,
+                'title'             => $teamTitle,
+                'body'              => $teamBody,
+                'data'              => json_encode([
+                    'type'       => 'rescue_dispatch',
+                    'rescue_id'  => $req->id,
+                    'team_id'    => $team->id,
                     'new_status' => 'assigned',
                 ]),
                 'notification_type' => 'rescue_dispatch',
-                'target_type' => 'user',
-                'target_id' => $memberId,
-                'channel' => 'all',
-                'status' => 'sent',
-                'sent_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'target_type'       => 'user',
+                'target_id'         => $memberId,
+                'channel'           => 'all',
+                'status'            => 'sent',
+                'sent_at'           => now(),
+                'created_at'        => now(),
+                'updated_at'        => now(),
             ]);
 
+            // ── WebSocket (laravel-echo) ─────────────────────────────────────
             event(new \App\Events\NotificationSent($memberId, [
-                'id' => $teamNotifId,
-                'type' => 'rescue_dispatch',
-                'title' => $teamTitle,
-                'message' => $teamBody,
-                'noi_dung' => $teamBody,
-                'tieu_de' => $teamTitle,
-                'data' => [
+                'id'         => $teamNotifId,
+                'type'       => 'rescue_dispatch',
+                'title'      => $teamTitle,
+                'message'    => $teamBody,
+                'noi_dung'   => $teamBody,
+                'tieu_de'    => $teamTitle,
+                'data'       => [
                     'rescue_id' => $req->id,
-                    'team_id' => $team->id,
+                    'team_id'   => $team->id,
                 ],
                 'created_at' => now()->toIso8601String(),
             ]));
+
+            // ── FCM Push Notification (giống người dân) ─────────────────────
+            $tokens = UserDevice::where('user_id', $memberId)
+                ->active()
+                ->notificationsEnabled()
+                ->pluck('fcm_token')
+                ->filter()
+                ->toArray();
+
+            if (! empty($tokens)) {
+                $fcm->sendToTokens($tokens, $teamTitle, $teamBody, [
+                    'type'       => 'rescue_dispatch',
+                    'rescue_id'  => (string) $req->id,
+                    'team_id'    => (string) $team->id,
+                    'address'    => $req->address ?? '',
+                    'urgency'    => $req->urgency ?? 'high',
+                    'new_status' => 'assigned',
+                ], 'high');
+            }
         }
 
         return ApiResponse::success($this->formatRequest($req->fresh()), 'Phân công thành công');
@@ -409,23 +435,74 @@ class RescueRequestController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Broadcast event
+            // Broadcast event WebSocket to citizen
             event(new NotificationSent($req->reported_by, [
-                'id' => $notifId,
-                'type' => 'report_status', // matches frontend listen key
-                'title' => $title,
-                'message' => $body,
-                'noi_dung' => $body,
-                'tieu_de' => $title,
-                'data' => [
-                    'id' => $req->id,
-                    'type' => 'report_status',
-                    'rescue_id' => $req->id,
+                'id'         => $notifId,
+                'type'       => 'report_status', // matches frontend listen key
+                'title'      => $title,
+                'message'    => $body,
+                'noi_dung'   => $body,
+                'tieu_de'    => $title,
+                'data'       => [
+                    'id'         => $req->id,
+                    'type'       => 'report_status',
+                    'rescue_id'  => $req->id,
                     'old_status' => $oldStatus,
                     'new_status' => $data['status'],
                 ],
                 'created_at' => now()->toIso8601String(),
             ]));
+
+            // FCM push to citizen reporter
+            $fcm = app(FcmPushService::class);
+            $citizenTokens = UserDevice::where('user_id', $req->reported_by)
+                ->active()
+                ->notificationsEnabled()
+                ->pluck('fcm_token')
+                ->filter()
+                ->toArray();
+            if (! empty($citizenTokens)) {
+                $fcm->sendToTokens($citizenTokens, $title, $body, [
+                    'type'       => 'rescue_status_update',
+                    'rescue_id'  => (string) $req->id,
+                    'old_status' => (string) $oldStatus,
+                    'new_status' => (string) $data['status'],
+                ], 'high');
+            }
+        }
+
+        // Notify rescue team members about status update via FCM
+        if ($req->assigned_team_id) {
+            $fcm = app(FcmPushService::class);
+            $teamStatusLabel = match ($data['status']) {
+                'in_progress' => 'Bắt đầu thực hiện',
+                'completed'   => 'Đã hoàn thành',
+                'cancelled'   => 'Đã hủy',
+                default       => $data['status'],
+            };
+
+            $teamTitle = "🔔 Cập nhật nhiệm vụ #{$req->id}";
+            $teamBody  = "Trạng thái: {$teamStatusLabel}. Địa điểm: " . ($req->address ?? 'xem chi tiết');
+
+            $teamMemberIds = RescueMember::where('team_id', $req->assigned_team_id)->pluck('user_id');
+            foreach ($teamMemberIds as $memberId) {
+                $teamTokens = UserDevice::where('user_id', $memberId)
+                    ->active()
+                    ->notificationsEnabled()
+                    ->pluck('fcm_token')
+                    ->filter()
+                    ->toArray();
+
+                if (! empty($teamTokens)) {
+                    $fcm->sendToTokens($teamTokens, $teamTitle, $teamBody, [
+                        'type'       => 'rescue_status_update',
+                        'rescue_id'  => (string) $req->id,
+                        'team_id'    => (string) $req->assigned_team_id,
+                        'old_status' => (string) $oldStatus,
+                        'new_status' => (string) $data['status'],
+                    ], 'high');
+                }
+            }
         }
 
         return ApiResponse::success($this->formatRequest($req->fresh()), 'Cập nhật trạng thái thành công');
