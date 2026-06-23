@@ -6,6 +6,7 @@ use App\Enums\AlertStatusEnum;
 use App\Enums\AlertTypeEnum;
 use App\Enums\RecommendationStatusEnum;
 use App\Enums\RecommendationTypeEnum;
+use App\Events\AlertCreated;
 use App\Models\Alert;
 use App\Models\FloodZone;
 use App\Models\Incident;
@@ -586,6 +587,9 @@ class RecommendationGenerator
                 // PostGIS không có — bỏ qua
             }
         }
+
+        // Dispatch sau khi lưu geometry (model Alert không tự dispatch nữa)
+        event(new AlertCreated($alert->fresh()));
 
         return $alert;
     }

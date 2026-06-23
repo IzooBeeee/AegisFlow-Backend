@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Events\AlertCreated;
 use App\Notifications\AlertNotification;
 use App\Traits\HasTranslatedEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,9 +64,11 @@ class Alert extends Model
             }
         });
 
-        static::created(function (Alert $alert) {
-            event(new AlertCreated($alert));
-        });
+        // NOTE: AlertCreated được dispatch TƯỜNG MINH tại nơi tạo alert
+        // (AlertController, RecommendationController, IncidentController, RecommendationGenerator)
+        // SAU khi đã lưu geometry. KHÔNG dispatch ở đây để tránh:
+        //   1. Phát event 2 lần → notification trùng lặp trong DB + 2 lần FCM/broadcast
+        //   2. Broadcast trước khi geometry được lưu (geometry = null trên bản đồ realtime)
     }
 
     public static function generateAlertNumber(): string

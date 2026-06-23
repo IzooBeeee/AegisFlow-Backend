@@ -6,6 +6,7 @@ use App\Enums\AlertStatusEnum;
 use App\Enums\AlertTypeEnum;
 use App\Enums\IncidentSourceEnum;
 use App\Enums\IncidentStatusEnum;
+use App\Events\AlertCreated;
 use App\Events\IncidentCreated;
 use App\Events\NotificationSent;
 use App\Helpers\ApiResponse;
@@ -209,6 +210,9 @@ class IncidentController extends Controller
                 } catch (\Exception $e) {
                 }
             }
+
+            // Dispatch sau khi lưu geometry (model Alert không tự dispatch nữa)
+            event(new AlertCreated($alert->fresh()));
         }
 
         $incident->logEvent('created', 'Sự cố được tạo bởi '.$user->name, $user->id);
