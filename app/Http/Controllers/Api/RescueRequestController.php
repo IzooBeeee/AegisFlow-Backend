@@ -381,6 +381,22 @@ class RescueRequestController extends Controller
             $req->complete();
         }
 
+        // Khi nhiệm vụ bị hủy hoặc hoàn thành → tự động reset đội về "Sẵn sàng"
+        if (in_array($data['status'], ['cancelled', 'completed']) && $req->assigned_team_id) {
+            $assignedTeam = RescueTeam::find($req->assigned_team_id);
+            if ($assignedTeam && $assignedTeam->status === 'dispatched') {
+                // Chỉ reset nếu không còn nhiệm vụ nào đang active
+                $activeMissions = \App\Models\RescueRequest::where('assigned_team_id', $assignedTeam->id)
+                    ->whereIn('status', ['assigned', 'in_progress'])
+                    ->where('id', '!=', $req->id)
+                    ->count();
+                if ($activeMissions === 0) {
+                    $assignedTeam->status = 'available';
+                    $assignedTeam->save();
+                }
+            }
+        }
+
         $eventTypes = [
             'assigned' => 'Đã phân công',
             'in_progress' => 'Bắt đầu xử lý',

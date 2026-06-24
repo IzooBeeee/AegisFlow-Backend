@@ -63,10 +63,13 @@ return [
 
     // ── Rescue Team ───────────────────────────────────────────
     'rescue_team_status' => [
-        'available' => 'Sẵn sàng',
+        'available'  => 'Sẵn sàng',
+        'dispatched' => 'Đang làm nhiệm vụ',
+        'busy'       => 'Bận',
+        'offline'    => 'Ngoại tuyến',
+        // Aliases cũ (giữ tương thích)
         'on_mission' => 'Đang làm nhiệm vụ',
-        'resting' => 'Đang nghỉ',
-        'offline' => 'Ngoại tuyến',
+        'resting'    => 'Đang nghỉ',
     ],
     'rescue_team_type' => [
         'medical' => 'Y Tế',
