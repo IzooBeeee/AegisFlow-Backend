@@ -168,6 +168,22 @@ class CitizenAndRescueTeamSeeder extends Seeder
             if ($rescueTeamRole) {
                 $user->assignRole($rescueTeamRole);
             }
+
+            // Tạo liên kết thành viên đội cứu hộ (RescueMember)
+            $team = RescueTeam::where('code', $t['code'])->first();
+            if ($team) {
+                \App\Models\RescueMember::firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'team_id' => $team->id,
+                    ],
+                    [
+                        'role' => 'leader',
+                        'status' => 'active',
+                        'is_available' => true,
+                    ]
+                );
+            }
         }
 
         $this->command->info('✅ Đã tạo xong dữ liệu tĩnh cho Công dân và Đội cứu hộ!');
