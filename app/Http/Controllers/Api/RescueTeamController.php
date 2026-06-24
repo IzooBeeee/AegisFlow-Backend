@@ -85,6 +85,45 @@ class RescueTeamController extends Controller
     }
 
     /**
+     * Cập nhật trạng thái
+     * PUT /api/rescue-teams/{id}/status
+     */
+    public function updateStatus(Request $request, int $id)
+    {
+        $team = RescueTeam::find($id);
+
+        if (! $team) {
+            return ApiResponse::notFound('Không tìm thấy đội cứu hộ');
+        }
+
+        // Only allow members of the team or admins to change status
+        $user = $request->user();
+        if (!$user->hasRole(['city_admin', 'rescue_operator'])) {
+            $member = \App\Models\RescueMember::where('user_id', $user->id)
+                ->where('team_id', $id)
+                ->first();
+            
+            if (!$member) {
+                return ApiResponse::forbidden('Bạn không có quyền cập nhật trạng thái của đội này');
+            }
+        }
+
+        $data = $request->validate([
+            'status' => 'required|string|in:available,offline',
+        ]);
+
+        // Prevent setting to available if they are dispatched or busy with an active incident
+        if ($data['status'] === 'available' && in_array($team->status, ['dispatched', 'busy'])) {
+            return ApiResponse::error('Đội đang làm nhiệm vụ, không thể chuyển sang trạng thái sẵn sàng lúc này.', 400);
+        }
+
+        $team->status = $data['status'];
+        $team->save();
+
+        return ApiResponse::success($this->formatTeam($team), 'Cập nhật trạng thái thành công');
+    }
+
+    /**
      * Đội của người dùng hiện tại
      * GET /api/rescue-teams/my
      */

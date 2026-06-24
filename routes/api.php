@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('rescue-teams', RescueTeamController::class)
         ->only('index', 'show');
     Route::put('rescue-teams/{id}/location', [RescueTeamController::class, 'updateLocation']);
+    Route::put('rescue-teams/{id}/status', [RescueTeamController::class, 'updateStatus']);
 
     // ── Upload ────────────────────────────────────────────
     Route::post('upload', [UploadController::class, 'store']);
