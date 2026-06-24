@@ -4,11 +4,57 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\RescueMember;
 use App\Models\RescueTeam;
 use Illuminate\Http\Request;
 
 class RescueTeamController extends Controller
 {
+    /**
+     * Mapping email tài khoản cứu hộ → mã đội (RESCUE-XXX)
+     * Mỗi tài khoản rescue_team đại diện cho 1 đội, không cần thành viên phức tạp
+     */
+    private const EMAIL_TO_TEAM_CODE = [
+        'rescue@aegisflow.ai'              => 'RESCUE-001', // Đội PCCC Liên Chiểu
+        'pccc.camle@aegisflow.ai'          => 'RESCUE-002', // Đội PCCC Cẩm Lệ
+        'yte.danang@aegisflow.ai'          => 'RESCUE-003', // Đội Y tế Đà Nẵng
+        'quandoi.hoavang@aegisflow.ai'     => 'RESCUE-004', // Đội Quân đội Hòa Vang
+        'tinhnguyen.thankkhe@aegisflow.ai' => 'RESCUE-005', // Đội Tình nguyện Thanh Khê
+    ];
+
+    /**
+     * Lấy đội cứu hộ của user đang đăng nhập
+     * Logic đơn giản: email → team code → team
+     */
+    protected function getMyTeam($user): ?RescueTeam
+    {
+        // Bước 1: Thử rescue_members trước (nếu có)
+        $member = RescueMember::where('user_id', $user->id)->with('team.district')->first();
+        if ($member?->team) {
+            return $member->team;
+        }
+
+        // Bước 2: Map theo email
+        $code = self::EMAIL_TO_TEAM_CODE[$user->email] ?? null;
+        if ($code) {
+            $team = RescueTeam::with('district')->where('code', $code)->first();
+            if ($team) {
+                // Tự động tạo rescue_member để lần sau không cần map nữa
+                RescueMember::firstOrCreate(
+                    ['user_id' => $user->id, 'team_id' => $team->id],
+                    ['role' => 'leader', 'status' => 'active', 'is_available' => true]
+                );
+                return $team;
+            }
+        }
+
+        return null;
+    }
+
+    // ============================================================
+    // API Endpoints
+    // ============================================================
+
     /**
      * Danh sách đội cứu hộ
      * GET /api/rescue-teams
@@ -48,7 +94,7 @@ class RescueTeamController extends Controller
      */
     public function show(int $id)
     {
-        $team = RescueTeam::with(['district', 'members.user', 'assignedRequests'])
+        $team = RescueTeam::with(['district', 'assignedRequests'])
             ->find($id);
 
         if (! $team) {
@@ -71,22 +117,24 @@ class RescueTeamController extends Controller
         }
 
         $data = $request->validate([
-            'latitude' => 'required|numeric|between:-90,90',
+            'latitude'  => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
         ]);
 
         $team->updateLocation($data['latitude'], $data['longitude']);
 
         return ApiResponse::success([
-            'latitude' => $team->current_latitude,
-            'longitude' => $team->current_longitude,
+            'latitude'   => $team->current_latitude,
+            'longitude'  => $team->current_longitude,
             'updated_at' => $team->last_location_update?->toIso8601String(),
         ], 'Cập nhật vị trí thành công');
     }
 
     /**
-     * Cập nhật trạng thái
+     * Cập nhật trạng thái đội
      * PUT /api/rescue-teams/{id}/status
+     * - Admin/operator: cập nhật bất kỳ đội nào
+     * - rescue_team: chỉ cập nhật đội của mình
      */
     public function updateStatus(Request $request, int $id)
     {
@@ -96,24 +144,19 @@ class RescueTeamController extends Controller
             return ApiResponse::notFound('Không tìm thấy đội cứu hộ');
         }
 
-        // Only allow members of the team or admins to change status
         $user = $request->user();
-        if (!$user->hasRole(['city_admin', 'rescue_operator'])) {
-            $member = $this->getOrCreateMember($user, $id);
-            
-            if (!$member) {
-                return ApiResponse::forbidden('Bạn không có quyền cập nhật trạng thái của đội này');
+
+        // Kiểm tra quyền: rescue_team chỉ được cập nhật đội của mình
+        if (! $user->hasRole(['city_admin', 'rescue_operator'])) {
+            $myTeam = $this->getMyTeam($user);
+            if (! $myTeam || $myTeam->id !== $id) {
+                return ApiResponse::forbidden('Bạn chỉ có thể cập nhật trạng thái đội của mình');
             }
         }
 
         $data = $request->validate([
             'status' => 'required|string|in:available,offline',
         ]);
-
-        // Prevent setting to available if they are dispatched or busy with an active incident
-        if ($data['status'] === 'available' && in_array($team->status, ['dispatched', 'busy'])) {
-            return ApiResponse::error('Đội đang làm nhiệm vụ, không thể chuyển sang trạng thái sẵn sàng lúc này.', 400);
-        }
 
         $team->status = $data['status'];
         $team->save();
@@ -122,112 +165,52 @@ class RescueTeamController extends Controller
     }
 
     /**
-     * Đội của người dùng hiện tại
+     * Thông tin đội của người dùng đang đăng nhập
      * GET /api/rescue-teams/my
      */
     public function myTeam(Request $request)
     {
-        $user = $request->user();
-        $member = $this->getOrCreateMember($user);
+        $team = $this->getMyTeam($request->user());
 
-        if (!$member || !$member->team) {
-            return ApiResponse::error('Bạn chưa thuộc đội cứu hộ nào', 404);
+        if (! $team) {
+            return ApiResponse::error('Tài khoản của bạn chưa được liên kết với đội cứu hộ nào', 404);
         }
 
-        return ApiResponse::success($this->formatTeam($member->team));
+        return ApiResponse::success($this->formatTeam($team));
     }
 
-    /**
-     * Lấy hoặc tự động tạo liên kết đội cứu hộ cho user (nếu bị thiếu do seeder)
-     */
-    protected function getOrCreateMember($user, ?int $teamId = null)
-    {
-        $query = \App\Models\RescueMember::with('team.district')
-            ->where('user_id', $user->id);
-            
-        if ($teamId) {
-            $query->where('team_id', $teamId);
-        }
-        
-        $member = $query->first();
+    // ============================================================
+    // Format helper
+    // ============================================================
 
-        if (!$member) {
-            $team = null;
-            if ($teamId) {
-                $team = RescueTeam::find($teamId);
-            } else {
-                // Thử tìm team trùng tên với user (ví dụ: 'Đội cứu hộ PCCC Cẩm Lệ (Tăng cường)')
-                $team = RescueTeam::where('name', $user->name)->first();
-                
-                if (!$team) {
-                    // Thử map theo email từ seeder
-                    $emailToCode = [
-                        'team_haichau@aegisflow.ai' => 'RESCUE-010',
-                        'team_thanhkhe@aegisflow.ai' => 'RESCUE-011',
-                        'team_qk5@aegisflow.ai' => 'RESCUE-012',
-                        'team_lienchieu@aegisflow.ai' => 'RESCUE-013',
-                        'team_nguhanhson@aegisflow.ai' => 'RESCUE-014',
-                        'team_sontra@aegisflow.ai' => 'RESCUE-015',
-                        'team_hoavang@aegisflow.ai' => 'RESCUE-016',
-                        'team_camle@aegisflow.ai' => 'RESCUE-017',
-                    ];
-                    if (isset($emailToCode[$user->email])) {
-                        $team = RescueTeam::where('code', $emailToCode[$user->email])->first();
-                    }
-                }
-            }
-
-            if ($team) {
-                $member = \App\Models\RescueMember::create([
-                    'user_id' => $user->id,
-                    'team_id' => $team->id,
-                    'role' => 'leader',
-                    'status' => 'active',
-                    'is_available' => true,
-                ]);
-                $member->load('team.district');
-            }
-        }
-
-        return $member;
-    }
-
-    /**
-     * Format team response
-     */
     protected function formatTeam(RescueTeam $team, bool $detailed = false): array
     {
         $data = [
-            'id' => $team->id,
-            'name' => $team->name,
-            'code' => $team->code,
-            'team_type' => $team->team_type,
-            'team_type_label' => $team->translated('team_type'),
-            'specializations' => $team->specializations ?? [],
-            'status' => $team->status,
-            'status_label' => $team->translated('status'),
-            'status_color' => $team->status_color,
-            'vehicle_count' => $team->vehicle_count,
-            'personnel_count' => $team->personnel_count,
-            'phone' => $team->phone,
+            'id'               => $team->id,
+            'name'             => $team->name,
+            'code'             => $team->code,
+            'team_type'        => $team->team_type,
+            'team_type_label'  => $team->translated('team_type'),
+            'specializations'  => $team->specializations ?? [],
+            'status'           => $team->status,
+            'status_label'     => $team->translated('status'),
+            'status_color'     => $team->status_color,
+            'vehicle_count'    => $team->vehicle_count,
+            'personnel_count'  => $team->personnel_count,
+            'phone'            => $team->phone,
             'current_latitude' => $team->current_latitude,
-            'current_longitude' => $team->current_longitude,
-            'location' => $team->location,
-            'district' => $team->district ? ['id' => $team->district->id, 'name' => $team->district->name] : null,
-            'created_at' => $team->created_at?->toIso8601String(),
+            'current_longitude'=> $team->current_longitude,
+            'location'         => $team->location,
+            'district'         => $team->district
+                ? ['id' => $team->district->id, 'name' => $team->district->name]
+                : null,
+            'created_at'       => $team->created_at?->toIso8601String(),
         ];
 
         if ($detailed) {
-            $data['equipment'] = $team->equipment ?? [];
+            $data['equipment']           = $team->equipment ?? [];
             $data['last_location_update'] = $team->last_location_update?->toIso8601String();
-            $data['members'] = $team->members->map(fn ($m) => [
-                'id' => $m->id,
-                'user_id' => $m->user_id,
-                'name' => $m->user?->name,
-                'role' => $m->role,
-                'is_available' => $m->is_available,
-            ]);
-            $data['active_missions'] = $team->assignedRequests()
+            $data['active_missions']     = $team->assignedRequests()
                 ->whereIn('status', ['assigned', 'in_progress'])
                 ->count();
         }
