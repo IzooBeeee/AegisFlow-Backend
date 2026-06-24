@@ -373,6 +373,116 @@ class RescueRequestController extends Controller
         $oldStatus = $req->status;
         $user = $request->user();
 
+        // ──────────────────────────────────────────────────────────
+        // XỬ LÝ ĐẶC BIỆT: Đội cứu hộ từ chối nhiệm vụ
+        // Khi rescue_team set 'cancelled' từ trạng thái 'assigned'
+        // → không cancel thật, mà trả lại 'pending' để admin điều phối lại
+        // ──────────────────────────────────────────────────────────
+        $isTeamRejection = $user->hasRole('rescue_team')
+            && $data['status'] === 'cancelled'
+            && in_array($oldStatus, ['assigned', 'in_progress']);
+
+        if ($isTeamRejection) {
+            $rejectedTeamId = $req->assigned_team_id;
+            $rejectedTeam   = $rejectedTeamId ? RescueTeam::find($rejectedTeamId) : null;
+
+            // Trả request về pending để admin điều phối lại
+            $req->status           = 'pending';
+            $req->assigned_team_id = null;
+            $req->save();
+
+            // Reset đội về sẵn sàng
+            if ($rejectedTeam && $rejectedTeam->status === 'dispatched') {
+                $remaining = \App\Models\RescueRequest::where('assigned_team_id', $rejectedTeam->id)
+                    ->whereIn('status', ['assigned', 'in_progress'])
+                    ->where('id', '!=', $req->id)
+                    ->count();
+                if ($remaining === 0) {
+                    $rejectedTeam->status = 'available';
+                    $rejectedTeam->save();
+                }
+            }
+
+            // Ghi log sự kiện từ chối
+            $req->events()->create([
+                'event_type'  => 'rejected',
+                'description' => 'Đội từ chối: ' . ($rejectedTeam?->name ?? 'N/A') . '. ' . ($data['notes'] ?? ''),
+                'actor_id'    => $user->id,
+                'metadata'    => [
+                    'old_status'       => $oldStatus,
+                    'rejected_team_id' => $rejectedTeamId,
+                    'rejected_team'    => $rejectedTeam?->name,
+                    'notes'            => $data['notes'] ?? null,
+                ],
+            ]);
+
+            // Broadcast để dashboard admin cập nhật real-time
+            broadcast(new RescueRequestUpdated($req->fresh()))->toOthers();
+
+            // Thông báo FCM + DB cho admin và rescue_operator
+            $adminIds = \App\Models\User::role(['city_admin', 'rescue_operator'])->pluck('id');
+            $title    = "⚠️ Đội từ chối nhiệm vụ #{$req->id}";
+            $body     = ($rejectedTeam?->name ?? 'Đội cứu hộ')
+                . ' đã từ chối yêu cầu tại ' . ($req->address ?? 'địa điểm không xác định')
+                . '. Cần điều phối lại!';
+
+            foreach ($adminIds as $adminId) {
+                $notifId = DB::table('notifications')->insertGetId([
+                    'title'             => $title,
+                    'body'              => $body,
+                    'data'              => json_encode([
+                        'type'      => 'team_rejected',
+                        'rescue_id' => $req->id,
+                        'team_id'   => $rejectedTeamId,
+                        'team_name' => $rejectedTeam?->name,
+                    ]),
+                    'notification_type' => 'team_rejected',
+                    'target_type'       => 'user',
+                    'target_id'         => $adminId,
+                    'channel'           => 'all',
+                    'status'            => 'sent',
+                    'sent_at'           => now(),
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
+                ]);
+
+                event(new NotificationSent($adminId, [
+                    'id'         => $notifId,
+                    'type'       => 'team_rejected',
+                    'title'      => $title,
+                    'message'    => $body,
+                    'tieu_de'    => $title,
+                    'noi_dung'   => $body,
+                    'data'       => [
+                        'type'      => 'team_rejected',
+                        'rescue_id' => $req->id,
+                        'team_id'   => $rejectedTeamId,
+                    ],
+                    'created_at' => now()->toIso8601String(),
+                ]));
+            }
+
+            // FCM push cho admin
+            $fcm         = app(FcmPushService::class);
+            $adminTokens = \App\Models\UserDevice::whereIn('user_id', $adminIds)
+                ->active()->notificationsEnabled()->pluck('fcm_token')->filter()->toArray();
+            if (! empty($adminTokens)) {
+                $fcm->sendToTokens($adminTokens, $title, $body, [
+                    'type'      => 'team_rejected',
+                    'rescue_id' => (string) $req->id,
+                    'team_id'   => (string) ($rejectedTeamId ?? ''),
+                ], 'high');
+            }
+
+            return ApiResponse::success(
+                $this->formatRequest($req->fresh()),
+                'Đã từ chối nhiệm vụ. Admin sẽ điều phối đội khác.'
+            );
+        }
+
+        // ──────────────────────────────────────────────────────────
+        // XỬ LÝ THƯỜNG: Admin/operator cập nhật trạng thái
+        // ──────────────────────────────────────────────────────────
         $req->status = $data['status'];
         $req->save();
 
